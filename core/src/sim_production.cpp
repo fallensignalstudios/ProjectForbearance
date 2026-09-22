@@ -170,6 +170,11 @@ void Session::phase_power() {
       lim.efficiency_class = EfficiencyClass::None;
       const Bp run = largest_feasible_run(lim, desired);
 
+      // Classify the limits against the pre-consumption snapshot, before the
+      // inputs are drawn down.
+      ex.actual_throughput_bp = run;
+      classify_limits(lim, desired, run, &ex);
+
       // A generator cannot burn Coal produced on that same day: inputs come
       // from opening available stock only.
       for (const auto& [idx, qty] : r.inputs) {
@@ -183,9 +188,7 @@ void Session::phase_power() {
       const PowerMilli supplied = mul_div_floor(r.power_output_per_day, run, kBpOne);
       generated = checked_add(generated, supplied);
 
-      ex.actual_throughput_bp = run;
       ex.power_granted = supplied;   // a generator's grant is what it supplies
-      classify_limits(lim, desired, run, &ex);
       choose_primary_reason(&ex);
       f.last_explanation = ex;
     }
@@ -267,6 +270,9 @@ void Session::phase_production() {
         if (!any_output) run = 0;
       }
 
+      ex.actual_throughput_bp = run;
+      classify_limits(lim, desired, run, &ex);
+
       const PowerMilli power_request = mul_div_ceil(r.power_per_day, desired, kBpOne);
       const PowerMilli power_grant = mul_div_ceil(r.power_per_day, run, kBpOne);
       ex.power_requested = power_request;
@@ -303,8 +309,6 @@ void Session::phase_production() {
         ps.port_handling_capacity = checked_add(ps.port_handling_capacity, handling);
       }
 
-      ex.actual_throughput_bp = run;
-      classify_limits(lim, desired, run, &ex);
       choose_primary_reason(&ex);
       f.last_explanation = ex;
     }

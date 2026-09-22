@@ -462,4 +462,6 @@ int reserve_workers_of(const SessionState& state, const PlanetState& planet) {
   return sim::workers_reserve(state, planet);
 }
 
+void validate_state(const SessionState& state, const Catalog& catalog) { sim::validate_invariants(state, catalog); }
+
 }  // namespace expansion

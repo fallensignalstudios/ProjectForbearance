@@ -151,7 +151,13 @@ CommandResult JournalRecorder::apply(const Command& c, std::optional<Revision> e
 }
 
 DayResult JournalRecorder::step() {
+  const Day before = session_->state().day;
   DayResult r = session_->step_day();
+  if (session_->state().day == before) {
+    // The scenario has finished: the calendar did not advance, so there is no
+    // day boundary to record.
+    return r;
+  }
   JournalEntry e;
   e.is_step = true;
   e.day = r.day;

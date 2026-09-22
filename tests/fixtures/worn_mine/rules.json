@@ -1,0 +1,53 @@
+{
+  "schema": "rules",
+  "simulation_version": "0.1.0",
+  "civilian_needs": {
+    "food_per_resident": 100,
+    "water_per_resident": 150,
+    "power_per_resident": 20
+  },
+  "wellbeing": {
+    "health_start": 10000,
+    "health_down_max": 500,
+    "health_up_max": 100,
+    "stability_start": 7000,
+    "stability_move_max": 100,
+    "stability_base_bp": 2500,
+    "stability_food_weight_bp": 2500,
+    "stability_water_weight_bp": 2000,
+    "stability_housing_weight_bp": 1500,
+    "stability_health_weight_bp": 1500,
+    "clinic_floor_bp": 8000,
+    "clinic_span_bp": 2000,
+    "health_factor_base_bp": 5000,
+    "health_factor_span_bp": 5000,
+    "fatigue_penalty_span_bp": 2500
+  },
+  "condition": {
+    "min_bp": 2500,
+    "max_bp": 10000,
+    "maintained_gain_per_day": 50,
+    "unmaintained_loss_per_day": 100,
+    "service_machinery_cost": 4000,
+    "service_downtime_days": 2,
+    "service_gain_bp": 2000,
+    "service_max_condition_bp": 9500,
+    "service_cooldown_days": 5
+  },
+  "construction": {
+    "power_per_worker": 100,
+    "min_days": 2
+  },
+  "workforce": {
+    "reserve_to_job_days": 1,
+    "job_to_job_days": 2
+  },
+  "news": {
+    "shortage_open_days": 2,
+    "shortage_close_days": 3,
+    "milestone_min_increase_bp": 1000,
+    "milestone_cooldown_days": 7,
+    "max_entries": 2000,
+    "max_metric_samples": 360
+  }
+}

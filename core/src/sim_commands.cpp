@@ -796,8 +796,10 @@ CommandResult Session::do_request_relief(const Command& c) {
   PlanetState* planet = state_.find_planet(c.planet_id);
   if (planet == nullptr) return reject(state_.revision, reason::kUnknownPlanet);
   if (!planet->survival_emergency_active) return reject(state_.revision, reason::kNoSurvivalEmergency);
-  if (planet->relief_used) return reject(state_.revision, reason::kReliefAlreadyUsed);
+  // Report the more specific reason first: a delivery already in flight is not
+  // the same as having spent this world's one contract.
   if (planet->relief_pending_day >= 0) return reject(state_.revision, reason::kReliefPending);
+  if (planet->relief_used) return reject(state_.revision, reason::kReliefAlreadyUsed);
   planet->relief_used = true;
   planet->relief_pending_day = checked_add(state_.day, sc.relief.delivery_delay_days);
   state_.political.adherence =

@@ -26,4 +26,9 @@ People housing_capacity_of(const SessionState& state, const Catalog& catalog, co
 // Workers currently in Reserve on a world.
 int reserve_workers_of(const SessionState& state, const PlanetState& planet);
 
+// Validates every invariant of TDD 18.3 against a candidate state. Throws
+// SimError naming the first violation. A loader calls this before the candidate
+// can replace an active session.
+void validate_state(const SessionState& state, const Catalog& catalog);
+
 }  // namespace expansion

@@ -1,0 +1,230 @@
+{
+  "schema": "scenarios",
+  "scenarios": [
+    {
+      "id": "half_water_half_power",
+      "start_day": 0,
+      "planets": [
+        {
+          "planet_id": "testworld",
+          "colonised": true,
+          "population": 20,
+          "workers": 12,
+          "stocks": {
+            "water": 20000
+          },
+          "facilities": [
+            {
+              "facility_id": "test_power_mast"
+            },
+            {
+              "facility_id": "test_farm"
+            },
+            {
+              "facility_id": "test_dock"
+            }
+          ]
+        },
+        {
+          "planet_id": "smallworld",
+          "colonised": false,
+          "population": 0,
+          "workers": 0,
+          "stocks": {},
+          "facilities": []
+        }
+      ],
+      "expedition": {
+        "target_planet": "smallworld",
+        "residents": 2,
+        "workers": 1,
+        "launch_cost": {
+          "steel": 1000
+        },
+        "cargo": {
+          "steel": 1000
+        },
+        "transit_per_day": {},
+        "transit_days": 2,
+        "hub_facility_id": "test_power_mast"
+      },
+      "freight": {
+        "origin_planet": "testworld",
+        "destination_planet": "smallworld",
+        "crew": 1,
+        "round_trip_fuel": 4000,
+        "outbound_fuel_burn": 2000,
+        "return_fuel_burn": 2000
+      },
+      "mandate": {
+        "issue_day": 1000,
+        "deadline_day": 1001,
+        "requirement": {
+          "steel": 1000
+        },
+        "negotiated_requirement": {
+          "steel": 500
+        }
+      },
+      "relief": {
+        "grant": {
+          "food": 1000
+        }
+      },
+      "completion": {
+        "evaluation_day": 100000
+      },
+      "events": []
+    },
+    {
+      "id": "full_store",
+      "start_day": 0,
+      "planets": [
+        {
+          "planet_id": "smallworld",
+          "colonised": true,
+          "population": 20,
+          "workers": 12,
+          "stocks": {
+            "water": 9000,
+            "food": 5000
+          },
+          "facilities": [
+            {
+              "facility_id": "test_power_mast"
+            },
+            {
+              "facility_id": "test_farm"
+            },
+            {
+              "facility_id": "test_dock"
+            }
+          ]
+        },
+        {
+          "planet_id": "testworld",
+          "colonised": false,
+          "population": 0,
+          "workers": 0,
+          "stocks": {},
+          "facilities": []
+        }
+      ],
+      "expedition": {
+        "target_planet": "testworld",
+        "residents": 2,
+        "workers": 1,
+        "launch_cost": {
+          "steel": 1000
+        },
+        "cargo": {
+          "steel": 1000
+        },
+        "transit_per_day": {},
+        "transit_days": 2,
+        "hub_facility_id": "test_power_mast"
+      },
+      "freight": {
+        "origin_planet": "smallworld",
+        "destination_planet": "testworld",
+        "crew": 1,
+        "round_trip_fuel": 4000,
+        "outbound_fuel_burn": 2000,
+        "return_fuel_burn": 2000
+      },
+      "mandate": {
+        "issue_day": 1000,
+        "deadline_day": 1001,
+        "requirement": {
+          "steel": 1000
+        },
+        "negotiated_requirement": {
+          "steel": 500
+        }
+      },
+      "relief": {
+        "grant": {
+          "food": 1000
+        }
+      },
+      "completion": {
+        "evaluation_day": 100000
+      },
+      "events": []
+    },
+    {
+      "id": "mining_efficiency",
+      "start_day": 0,
+      "planets": [
+        {
+          "planet_id": "testworld",
+          "colonised": true,
+          "population": 60,
+          "workers": 22,
+          "stocks": {},
+          "facilities": [
+            {
+              "facility_id": "test_power_mast"
+            },
+            {
+              "facility_id": "test_mine",
+              "assigned_workers": 20
+            },
+            {
+              "facility_id": "test_dock"
+            }
+          ]
+        },
+        {
+          "planet_id": "smallworld",
+          "colonised": false,
+          "population": 0,
+          "workers": 0,
+          "stocks": {},
+          "facilities": []
+        }
+      ],
+      "expedition": {
+        "target_planet": "smallworld",
+        "residents": 2,
+        "workers": 1,
+        "launch_cost": {
+          "steel": 1000
+        },
+        "cargo": {
+          "steel": 1000
+        },
+        "transit_per_day": {},
+        "transit_days": 2,
+        "hub_facility_id": "test_power_mast"
+      },
+      "freight": {
+        "origin_planet": "testworld",
+        "destination_planet": "smallworld",
+        "crew": 1,
+        "round_trip_fuel": 4000,
+        "outbound_fuel_burn": 2000,
+        "return_fuel_burn": 2000
+      },
+      "mandate": {
+        "issue_day": 1000,
+        "deadline_day": 1001,
+        "requirement": {
+          "steel": 1000
+        },
+        "negotiated_requirement": {
+          "steel": 500
+        }
+      },
+      "relief": {
+        "grant": {
+          "food": 1000
+        }
+      },
+      "completion": {
+        "evaluation_day": 100000
+      },
+      "events": []
+    }
+  ]
+}

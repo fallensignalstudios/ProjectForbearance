@@ -1,0 +1,26 @@
+{
+  "schema": "factions",
+  "factions": [
+    {
+      "id": "neutral_calibration",
+      "fixture_only": true,
+      "industry_throughput_bp": 10000,
+      "clinic_capacity_bp": 10000,
+      "initial_adherence": 70
+    },
+    {
+      "id": "testing_profile",
+      "industry_throughput_bp": 10000,
+      "clinic_capacity_bp": 10000,
+      "initial_adherence": 70
+    }
+  ],
+  "policies": [
+    {
+      "id": "normal",
+      "is_default": true,
+      "min_days": 0,
+      "cooldown_days": 0
+    }
+  ]
+}

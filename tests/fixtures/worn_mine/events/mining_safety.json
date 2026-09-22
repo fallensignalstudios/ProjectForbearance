@@ -1,0 +1,227 @@
+{
+  "schema": "events",
+  "events": [
+    {
+      "id": "safety_warning",
+      "display_key": "event.safety_warning",
+      "chain_id": "mining_safety",
+      "scope": "facility",
+      "applies_to_facility": "extraction_site",
+      "queue_class": "new_warning",
+      "consecutive_days": 3,
+      "condition": {
+        "kind": "All",
+        "children": [
+          {"kind": "CompareMetric", "scope": "facility", "metric": "operating", "op": "eq", "value": 1},
+          {"kind": "CompareMetric", "scope": "facility", "metric": "condition_bp", "op": "lt", "value": 7000}
+        ]
+      },
+      "condition_resolved": {
+        "kind": "CompareMetric", "scope": "facility", "metric": "condition_bp", "op": "gte", "value": 7500
+      },
+      "decision_deadline_days": 3,
+      "cooldown_days": 10,
+      "on_expire": [
+        {"kind": "OpenEvent", "key": "mining_accident"}
+      ],
+      "news_template_open": "news.safety_warning",
+      "news_template_resolved": "news.accident_prevented",
+      "news_template_expire": "news.safety_warning_lapsed"
+    },
+    {
+      "id": "mining_accident",
+      "display_key": "event.mining_accident",
+      "chain_id": "mining_safety",
+      "scope": "facility",
+      "queue_class": "chain_deadline",
+      "decision_deadline_days": 3,
+      "pauses_simulation": true,
+      "expire_keeps_open": true,
+      "on_open": [
+        {
+          "kind": "ApplyModifier",
+          "target": "event_target",
+          "modifier_target": "facility_throughput",
+          "factor_bp": 5000,
+          "duration_days": 0,
+          "tag": "accident"
+        }
+      ],
+      "on_expire": [
+        {
+          "kind": "ScheduleEffect",
+          "delay_days": 5,
+          "effects": [{"kind": "OpenEvent", "key": "worker_demands"}]
+        }
+      ],
+      "news_template_open": "news.mining_accident",
+      "choices": [
+        {
+          "id": "repair_immediately",
+          "display_key": "choice.mining_accident.repair_immediately",
+          "cost": {"machinery": 8000},
+          "cancels_scheduled_from": ["defer_action"],
+          "news_template": "news.accident_response",
+          "effects": [
+            {
+              "kind": "ScheduleEffect",
+              "delay_days": 2,
+              "effects": [
+                {"kind": "SetConditionAtLeast", "condition_bp": 8000},
+                {"kind": "ClearModifiersByTag", "tag": "accident"}
+              ]
+            },
+            {"kind": "AdjustAdherence", "amount": 2, "faction": "dominion"},
+            {"kind": "AdjustAdherence", "amount": -1, "faction": "reformation"}
+          ]
+        },
+        {
+          "id": "investigate_and_repair",
+          "display_key": "choice.mining_accident.investigate_and_repair",
+          "cost": {"machinery": 4000},
+          "cancels_scheduled_from": ["defer_action"],
+          "news_template": "news.accident_response",
+          "effects": [
+            {
+              "kind": "ScheduleEffect",
+              "delay_days": 5,
+              "effects": [
+                {"kind": "SetConditionAtLeast", "condition_bp": 9000},
+                {"kind": "ClearModifiersByTag", "tag": "accident"}
+              ]
+            },
+            {"kind": "AdjustStabilityTarget", "target": "event_planet", "amount": 500, "duration_days": 10,
+             "tag": "investigation"},
+            {"kind": "AdjustAdherence", "amount": -1, "faction": "dominion"},
+            {"kind": "AdjustAdherence", "amount": 3, "faction": "reformation"}
+          ]
+        },
+        {
+          "id": "replace_crews",
+          "display_key": "choice.mining_accident.replace_crews",
+          "required_reserve_workers": 10,
+          "required_assigned_workers": 10,
+          "cancels_scheduled_from": ["defer_action"],
+          "news_template": "news.accident_response",
+          "effects": [
+            {"kind": "ReplaceCrews", "workers": 10, "duration_days": 2},
+            {
+              "kind": "ScheduleEffect",
+              "delay_days": 2,
+              "effects": [
+                {"kind": "SetConditionAtLeast", "condition_bp": 7500},
+                {"kind": "ClearModifiersByTag", "tag": "accident"}
+              ]
+            },
+            {"kind": "AdjustStabilityTarget", "target": "event_planet", "amount": -800, "duration_days": 10,
+             "tag": "crew_replacement"},
+            {"kind": "AdjustAdherence", "amount": 1, "faction": "dominion"},
+            {"kind": "AdjustAdherence", "amount": -5, "faction": "reformation"}
+          ]
+        },
+        {
+          "id": "defer_action",
+          "display_key": "choice.mining_accident.defer_action",
+          "resolution": "keep_open",
+          "news_template": "news.accident_deferred",
+          "effects": [
+            {
+              "kind": "ScheduleEffect",
+              "delay_days": 5,
+              "effects": [{"kind": "OpenEvent", "key": "worker_demands"}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "worker_demands",
+      "display_key": "event.worker_demands",
+      "chain_id": "mining_safety",
+      "scope": "facility",
+      "queue_class": "chain_deadline",
+      "decision_deadline_days": 3,
+      "cooldown_days": 100000,
+      "pauses_simulation": true,
+      "news_template_open": "news.worker_demands",
+      "choices": [
+        {
+          "id": "settlement",
+          "display_key": "choice.worker_demands.settlement",
+          "cost": {"machinery": 6000},
+          "news_template": "news.worker_demands_settled",
+          "effects": [
+            {
+              "kind": "ScheduleEffect",
+              "delay_days": 3,
+              "effects": [
+                {"kind": "SetConditionAtLeast", "condition_bp": 8500},
+                {"kind": "ClearModifiersByTag", "tag": "accident"}
+              ]
+            },
+            {"kind": "AdjustStabilityTarget", "target": "event_planet", "amount": 300, "duration_days": 10,
+             "tag": "safety_settlement"},
+            {"kind": "AdjustAdherence", "amount": 1}
+          ]
+        },
+        {
+          "id": "refusal",
+          "display_key": "choice.worker_demands.refusal",
+          "news_template": "news.worker_demands_refused",
+          "effects": [
+            {
+              "kind": "ApplyModifier",
+              "target": "event_target",
+              "modifier_target": "facility_throughput",
+              "factor_bp": 5000,
+              "duration_days": 5,
+              "tag": "strike"
+            },
+            {"kind": "AdjustStabilityTarget", "target": "event_planet", "amount": -500, "duration_days": 10,
+             "tag": "strike_backlash"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "faction_review",
+      "display_key": "event.faction_review",
+      "chain_id": "faction_review",
+      "scope": "planet",
+      "queue_class": "faction_review",
+      "consecutive_days": 7,
+      "sector_unique": true,
+      "condition": {"kind": "CompareMetric", "scope": "sector", "metric": "adherence", "op": "lt", "value": 30},
+      "decision_deadline_days": 5,
+      "cooldown_days": 30,
+      "pauses_simulation": true,
+      "news_template_open": "news.faction_review",
+      "choices": [
+        {
+          "id": "accept_oversight",
+          "display_key": "choice.faction_review.accept_oversight",
+          "news_template": "news.faction_review_resolved",
+          "effects": [
+            {"kind": "AdjustAdherence", "amount": 10},
+            {
+              "kind": "ApplyModifier",
+              "target": "sector",
+              "modifier_target": "planet_industry_throughput",
+              "factor_bp": 9000,
+              "duration_days": 10,
+              "tag": "oversight"
+            }
+          ]
+        },
+        {
+          "id": "reject_oversight",
+          "display_key": "choice.faction_review.reject_oversight",
+          "news_template": "news.faction_review_resolved",
+          "effects": [
+            {"kind": "AdjustAdherence", "amount": -5}
+          ]
+        }
+      ]
+    }
+  ]
+}

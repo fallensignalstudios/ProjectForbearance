@@ -1,0 +1,13 @@
+{
+  "schema": "rules",
+  "simulation_version": "0.1.0",
+  "civilian_needs": {
+    "food_per_resident": 0,
+    "water_per_resident": 0,
+    "power_per_resident": 0
+  },
+  "condition": {
+    "maintained_gain_per_day": 0,
+    "unmaintained_loss_per_day": 0
+  }
+}

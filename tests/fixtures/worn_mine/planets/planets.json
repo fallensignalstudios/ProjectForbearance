@@ -1,0 +1,19 @@
+{
+  "schema": "planets",
+  "planets": [
+    {
+      "id": "homeworld",
+      "display_key": "planet.homeworld",
+      "slot_count": 20,
+      "resource_capacity": 5000000,
+      "efficiency": {"agriculture": 10000, "mining": 10000}
+    },
+    {
+      "id": "frontier",
+      "display_key": "planet.frontier",
+      "slot_count": 12,
+      "resource_capacity": 1000000,
+      "efficiency": {"agriculture": 5000, "mining": 15000}
+    }
+  ]
+}

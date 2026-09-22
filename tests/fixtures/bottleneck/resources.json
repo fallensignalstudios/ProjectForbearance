@@ -1,0 +1,33 @@
+{
+  "schema": "resources",
+  "resources": [
+    {
+      "id": "food",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "water",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "iron_ore",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "coal",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "steel",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "machinery",
+      "volume_per_unit": 1000
+    },
+    {
+      "id": "fuel",
+      "volume_per_unit": 1000
+    }
+  ]
+}

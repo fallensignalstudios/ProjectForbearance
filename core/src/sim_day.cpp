@@ -165,20 +165,27 @@ void Session::phase_due_work() {
                    "relief_delivered:" + p.planet_id, 0);
   }
 
-  // Expedition arrival: charge the final transit day before founding (TDD 11.1).
-  if (state_.colonisation.launched && !state_.colonisation.founded && state_.colonisation.arrival_day == today) {
+  // Expedition transit and arrival. Each transit day is charged from the
+  // expedition's own cargo, and a due expedition consumes its final transit
+  // day's needs before founding (TDD 5.2, 11.1).
+  auto charge_transit_day = [&]() {
     const ScenarioDef& sc = catalog_->scenario(state_.scenario_id);
     for (const auto& [idx, per_day] : sc.expedition.transit_per_day) {
       auto it = state_.colonisation.cargo.find(idx);
       Milli have = it == state_.colonisation.cargo.end() ? 0 : it->second;
       Milli take = have < per_day ? have : per_day;
-      if (take > 0) {
-        state_.colonisation.cargo[idx] = have - take;
-        state_.colonisation.consumed_transit[idx] += take;
-        sim::record(state_, idx, take, sim::expedition_account(state_.colonisation.expedition_id),
-                    account::kSinkCivilian, state_.colonisation.expedition_id, reason::kCauseExpeditionTransit);
-      }
+      if (take <= 0) continue;
+      state_.colonisation.cargo[idx] = have - take;
+      state_.colonisation.consumed_transit[idx] += take;
+      sim::record(state_, idx, take, sim::expedition_account(state_.colonisation.expedition_id),
+                  account::kSinkCivilian, state_.colonisation.expedition_id, reason::kCauseExpeditionTransit);
     }
+  };
+  if (state_.colonisation.launched && !state_.colonisation.founded && state_.colonisation.arrival_day > today) {
+    charge_transit_day();
+  }
+  if (state_.colonisation.launched && !state_.colonisation.founded && state_.colonisation.arrival_day == today) {
+    charge_transit_day();
     found_colony();
   }
 

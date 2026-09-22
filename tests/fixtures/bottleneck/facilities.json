@@ -1,0 +1,88 @@
+{
+  "schema": "facilities",
+  "facilities": [
+    {
+      "id": "test_power_mast",
+      "category": "energy",
+      "build_cost": {
+        "steel": 1000
+      },
+      "build_work": 1000,
+      "maintenance_machinery_per_day": 0,
+      "passive": {
+        "power_output": 5000
+      },
+      "recipes": [
+        {
+          "id": "mast_idle",
+          "staff": 0,
+          "priority_band": 5
+        }
+      ]
+    },
+    {
+      "id": "test_farm",
+      "category": "agriculture",
+      "build_cost": {
+        "steel": 1000
+      },
+      "build_work": 1000,
+      "maintenance_machinery_per_day": 0,
+      "recipes": [
+        {
+          "id": "test_farm_food",
+          "staff": 10,
+          "power_per_day": 10000,
+          "inputs": {
+            "water": 40000
+          },
+          "outputs": {
+            "food": 40000
+          },
+          "priority_band": 10
+        }
+      ]
+    },
+    {
+      "id": "test_dock",
+      "category": "logistics",
+      "build_cost": {
+        "steel": 1000
+      },
+      "build_work": 1000,
+      "maintenance_machinery_per_day": 0,
+      "passive": {
+        "docks": 1
+      },
+      "recipes": [
+        {
+          "id": "test_dock_handling",
+          "staff": 1,
+          "cargo_handling_per_day": 120000,
+          "priority_band": 20
+        }
+      ]
+    },
+    {
+      "id": "test_mine",
+      "category": "mining",
+      "build_cost": {
+        "steel": 1000
+      },
+      "build_work": 1000,
+      "maintenance_machinery_per_day": 0,
+      "recipes": [
+        {
+          "id": "test_mine_iron",
+          "staff": 40,
+          "power_per_day": 8000,
+          "outputs": {
+            "iron_ore": 48000
+          },
+          "efficiency_class": "mining",
+          "priority_band": 30
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,233 @@
+{
+  "schema": "facilities",
+  "facilities": [
+    {
+      "id": "agricultural_complex",
+      "display_key": "facility.agricultural_complex",
+      "category": "agriculture",
+      "build_cost": {"steel": 30000, "machinery": 6000},
+      "build_work": 80000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 50,
+      "recipes": [
+        {
+          "id": "agriculture_food",
+          "display_key": "recipe.agriculture_food",
+          "staff": 80,
+          "power_per_day": 10000,
+          "inputs": {"water": 40000},
+          "outputs": {"food": 160000},
+          "efficiency_class": "agriculture",
+          "priority_band": 10
+        }
+      ]
+    },
+    {
+      "id": "waterworks",
+      "display_key": "facility.waterworks",
+      "category": "services",
+      "build_cost": {"steel": 25000, "machinery": 5000},
+      "build_work": 60000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 50,
+      "recipes": [
+        {
+          "id": "waterworks_water",
+          "display_key": "recipe.waterworks_water",
+          "staff": 30,
+          "power_per_day": 8000,
+          "outputs": {"water": 240000},
+          "priority_band": 10
+        }
+      ]
+    },
+    {
+      "id": "thermal_generator",
+      "display_key": "facility.thermal_generator",
+      "category": "energy",
+      "build_cost": {"steel": 30000, "machinery": 6000},
+      "build_work": 80000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 100,
+      "recipes": [
+        {
+          "id": "thermal_power",
+          "display_key": "recipe.thermal_power",
+          "staff": 30,
+          "inputs": {"coal": 8000},
+          "power_output_per_day": 90000,
+          "priority_band": 20
+        }
+      ]
+    },
+    {
+      "id": "extraction_site",
+      "display_key": "facility.extraction_site",
+      "category": "mining",
+      "build_cost": {"steel": 30000, "machinery": 6000},
+      "build_work": 80000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 50,
+      "recipes": [
+        {
+          "id": "extraction_iron",
+          "display_key": "recipe.extraction_iron",
+          "staff": 40,
+          "power_per_day": 8000,
+          "outputs": {"iron_ore": 48000},
+          "efficiency_class": "mining",
+          "priority_band": 30
+        },
+        {
+          "id": "extraction_coal",
+          "display_key": "recipe.extraction_coal",
+          "staff": 40,
+          "power_per_day": 8000,
+          "outputs": {"coal": 24000},
+          "efficiency_class": "mining",
+          "priority_band": 20
+        }
+      ]
+    },
+    {
+      "id": "steel_foundry",
+      "display_key": "facility.steel_foundry",
+      "category": "industry",
+      "build_cost": {"steel": 40000, "machinery": 8000},
+      "build_work": 100000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 100,
+      "recipes": [
+        {
+          "id": "foundry_steel",
+          "display_key": "recipe.foundry_steel",
+          "staff": 50,
+          "power_per_day": 12000,
+          "inputs": {"iron_ore": 30000, "coal": 8000},
+          "outputs": {"steel": 20000},
+          "priority_band": 30
+        }
+      ]
+    },
+    {
+      "id": "machinery_fabricator",
+      "display_key": "facility.machinery_fabricator",
+      "category": "industry",
+      "build_cost": {"steel": 40000, "machinery": 10000},
+      "build_work": 100000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 100,
+      "recipes": [
+        {
+          "id": "fabricator_machinery",
+          "display_key": "recipe.fabricator_machinery",
+          "staff": 40,
+          "power_per_day": 10000,
+          "inputs": {"steel": 8000},
+          "outputs": {"machinery": 4000},
+          "priority_band": 30
+        }
+      ]
+    },
+    {
+      "id": "fuel_refinery",
+      "display_key": "facility.fuel_refinery",
+      "category": "industry",
+      "build_cost": {"steel": 35000, "machinery": 8000},
+      "build_work": 80000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 80,
+      "recipes": [
+        {
+          "id": "refinery_fuel",
+          "display_key": "recipe.refinery_fuel",
+          "staff": 30,
+          "power_per_day": 8000,
+          "inputs": {"coal": 6000},
+          "outputs": {"fuel": 12000},
+          "priority_band": 30
+        }
+      ]
+    },
+    {
+      "id": "public_clinic",
+      "display_key": "facility.public_clinic",
+      "category": "services",
+      "build_cost": {"steel": 20000, "machinery": 4000},
+      "build_work": 60000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 50,
+      "recipes": [
+        {
+          "id": "clinic_service",
+          "display_key": "recipe.clinic_service",
+          "staff": 30,
+          "power_per_day": 4000,
+          "inputs": {"water": 4000},
+          "clinic_capacity": 1200,
+          "priority_band": 15
+        }
+      ]
+    },
+    {
+      "id": "habitat_block",
+      "display_key": "facility.habitat_block",
+      "category": "services",
+      "build_cost": {"steel": 20000, "machinery": 4000},
+      "build_work": 60000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 10,
+      "passive": {"housing": 600},
+      "recipes": [
+        {
+          "id": "habitat_housing",
+          "display_key": "recipe.habitat_housing",
+          "staff": 0,
+          "priority_band": 5
+        }
+      ]
+    },
+    {
+      "id": "spaceport",
+      "display_key": "facility.spaceport",
+      "category": "logistics",
+      "build_cost": {"steel": 40000, "machinery": 8000},
+      "build_work": 40000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 50,
+      "passive": {"docks": 1},
+      "recipes": [
+        {
+          "id": "spaceport_handling",
+          "display_key": "recipe.spaceport_handling",
+          "staff": 20,
+          "power_per_day": 6000,
+          "cargo_handling_per_day": 120000,
+          "priority_band": 20
+        }
+      ]
+    },
+    {
+      "id": "colony_hub",
+      "display_key": "facility.colony_hub",
+      "category": "administration",
+      "build_cost": {"steel": 40000, "machinery": 10000},
+      "build_work": 80000,
+      "min_build_days": 2,
+      "maintenance_machinery_per_day": 20,
+      "buildable": false,
+      "one_per_world": true,
+      "passive": {"housing": 150, "power_output": 20000},
+      "recipes": [
+        {
+          "id": "hub_water",
+          "display_key": "recipe.hub_water",
+          "staff": 10,
+          "power_per_day": 2000,
+          "outputs": {"water": 20000},
+          "priority_band": 5
+        }
+      ]
+    }
+  ]
+}

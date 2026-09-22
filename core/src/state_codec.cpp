@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "expansion/derived.hpp"
 #include "expansion/reasons.hpp"
 
 namespace expansion {
@@ -1082,6 +1083,8 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     n.detail_compacted = e.bool_or("detail_compacted", false);
     s.news.push_back(n);
   }
+  // Validate the candidate in isolation before any caller can adopt it.
+  validate_state(s, cat);
   return s;
 }
 

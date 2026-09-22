@@ -79,6 +79,7 @@ if(EXPANSION_BUILD_TESTS)
     tests/integration/test_events.cpp
     tests/integration/test_persistence.cpp
     tests/integration/test_scenario.cpp
+    tests/integration/test_derived.cpp
   )
   target_include_directories(expansion_tests PRIVATE tests)
   target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation)

@@ -35,17 +35,12 @@ void Session::phase_freight() {
   // it is the prototype's central shared-capacity tradeoff (TDD 10.4, 14.2).
   depart_strategic_mission();
 
-  // Scheduled departures on the enabled colony route.
   RoutePlan& route = state_.route;
-  if (!route.enabled) {
-    for (auto& planet : state_.planets) planet.last_day.port_handling_capacity = scratch_->at(planet.planet_id).port_handling_capacity;
-    return;
-  }
-
   ShipState& ship = state_.ship;
   const ScenarioDef& sc = catalog_->scenario(state_.scenario_id);
 
-  // An explicitly authorised departure, then the scheduled one.
+  // An explicit authorisation works whether or not the route runs on a
+  // schedule, so a one-off or repositioning trip does not need the plan enabled.
   if (route.departure_requested) {
     const bool available = ship.mission == ShipMission::None && ship.phase == ShipPhase::Docked &&
                            ship.location_planet == route.origin_planet &&
@@ -65,8 +60,8 @@ void Session::phase_freight() {
     }
   }
 
-  // Outbound leg from the route origin.
-  if (route.next_departure_day <= state_.day) {
+  // Scheduled departures only run on an enabled route.
+  if (route.enabled && route.next_departure_day <= state_.day) {
     const bool available = ship.mission == ShipMission::None && ship.phase == ShipPhase::Docked &&
                            ship.location_planet == route.origin_planet &&
                            state_.day >= ship.earliest_departure_day;
@@ -99,7 +94,7 @@ void Session::phase_freight() {
   }
 
   // Return leg: loading begins only after all inbound cargo is unloaded.
-  if (ship.mission == ShipMission::None && ship.phase == ShipPhase::Docked &&
+  if (route.enabled && ship.mission == ShipMission::None && ship.phase == ShipPhase::Docked &&
       ship.location_planet == route.destination_planet && ship.cargo.empty() &&
       state_.day >= ship.earliest_departure_day) {
     PlanetState& src = state_.planet(route.destination_planet);

@@ -1,0 +1,19 @@
+{
+  "schema": "planets",
+  "planets": [
+    {
+      "id": "testworld",
+      "slot_count": 10,
+      "resource_capacity": 1000000,
+      "efficiency": {
+        "mining": 15000,
+        "agriculture": 10000
+      }
+    },
+    {
+      "id": "smallworld",
+      "slot_count": 10,
+      "resource_capacity": 10000
+    }
+  ]
+}
