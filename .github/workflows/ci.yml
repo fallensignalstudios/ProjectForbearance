@@ -3,10 +3,12 @@ name: ci
 # On each pull request: compile, validate the catalog, run the unit and
 # integration tests, replay the golden fixtures, and reject an unacknowledged
 # balance or hash change (technical design, Section 19.4).
+# Runs on every push and every pull request. The branch filter is deliberately
+# absent: this repository has no trunk yet, so pinning the push trigger to `main`
+# would mean no run at all.
 on:
   pull_request:
   push:
-    branches: [main]
 
 jobs:
   headless:
