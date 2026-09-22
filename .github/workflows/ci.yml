@@ -1,0 +1,88 @@
+name: ci
+
+# On each pull request: compile, validate the catalog, run the unit and
+# integration tests, replay the golden fixtures, and reject an unacknowledged
+# balance or hash change (technical design, Section 19.4).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  headless:
+    name: headless core (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+          if [ "${{ matrix.compiler }}" = "clang" ]; then sudo apt-get install -y clang; fi
+
+      - name: Configure
+        run: |
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            export CC=clang CXX=clang++
+          fi
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEXPANSION_WERROR=ON
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Validate the catalog and the neutral preflight
+        run: ./build/expansion validate --content=content
+
+      - name: Unit and integration tests
+        run: ./build/expansion_tests
+
+      - name: Replay the golden fixtures
+        run: tools/validate_content/validate_content.sh content build/expansion
+
+      - name: Same-build determinism
+        run: |
+          for journal in tests/replays/*.journal.json; do
+            ./build/expansion verify --content=content --journal="$journal"
+          done
+
+  cross-compiler-determinism:
+    name: cross-compiler determinism
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build clang
+
+      - name: Build with both compilers
+        run: |
+          cmake -S . -B build-gcc -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build-gcc --target expansion
+          CC=clang CXX=clang++ cmake -S . -B build-clang -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          cmake --build build-clang --target expansion
+
+      - name: Compare canonical hashes for every recorded run
+        run: |
+          status=0
+          for journal in tests/replays/*.journal.json; do
+            a=$(./build-gcc/expansion replay --content=content --journal="$journal" | awk '/final hash/ {print $3}')
+            b=$(./build-clang/expansion replay --content=content --journal="$journal" | awk '/final hash/ {print $3}')
+            if [ "$a" = "$b" ]; then
+              echo "match  $(basename "$journal")  $a"
+            else
+              echo "DIFFER $(basename "$journal"): gcc=$a clang=$b"
+              status=1
+            fi
+          done
+          exit $status
+
+  # A Linux headless pass does not prove Windows packaging or an Unreal build.
+  # Those jobs belong here once the presentation host is approved, and their
+  # absence is deliberate rather than an oversight.

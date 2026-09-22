@@ -1,0 +1,34 @@
+{
+  "schema": "schema_doc",
+  "describes": "factions",
+  "note": "Schema documents describe the authoring contract. They are documentation: the loader skips content/schemas/ and they do not affect the catalog hash.",
+  "units": {
+    "quantity": "integer milli-units; 1000 == one displayed unit",
+    "ratio": "integer basis points; 10000 == 100%",
+    "power": "integer power-unit milli-units; power is never a stored commodity",
+    "work": "integer milli person-days",
+    "no_floating_point": "the loader rejects fractional and exponent literals outright"
+  },
+  "identifiers": "lowercase ASCII letters, digits and underscore; 1..64 characters",
+  "fields": {
+    "factions[]": {
+      "id": "required",
+      "industry_throughput_bp": "applies to Industry-category recipes; inputs, power and outputs rise together",
+      "clinic_capacity_bp": "applied after staffing and power limits",
+      "initial_adherence": "0..100",
+      "fixture_only": "a verification profile with no modifiers at all; a host must not offer it as playable"
+    },
+    "policies[]": {
+      "id": "required",
+      "is_default": "exactly one policy must set this",
+      "food_demand_bp": "civilian Food demand multiplier",
+      "mining_throughput_bp": "Mining-category throughput multiplier",
+      "industry_throughput_bp": "Industry-category throughput multiplier",
+      "stability_target_adjust_bp": "signed basis points added to the stability target",
+      "fatigue_delta_per_day": "signed daily fatigue movement; negative is recovery",
+      "min_days": "affected daily steps before the policy may be replaced",
+      "cooldown_days": "days after ending before it may be reapplied",
+      "adherence_on_entry": "map of faction id to a one-time adherence change"
+    }
+  }
+}

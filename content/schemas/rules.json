@@ -1,0 +1,22 @@
+{
+  "schema": "schema_doc",
+  "describes": "rules",
+  "note": "Schema documents describe the authoring contract. They are documentation: the loader skips content/schemas/ and they do not affect the catalog hash.",
+  "units": {
+    "quantity": "integer milli-units; 1000 == one displayed unit",
+    "ratio": "integer basis points; 10000 == 100%",
+    "power": "integer power-unit milli-units; power is never a stored commodity",
+    "work": "integer milli person-days",
+    "no_floating_point": "the loader rejects fractional and exponent literals outright"
+  },
+  "identifiers": "lowercase ASCII letters, digits and underscore; 1..64 characters",
+  "fields": {
+    "simulation_version": "must match the build that loads the catalog",
+    "civilian_needs": "per-resident Food, Water and residential power per day",
+    "wellbeing": "health, fatigue and stability movement limits and weights",
+    "condition": "condition bounds, maintenance movement and the Service Facility command",
+    "construction": "power per assigned worker and the global minimum build days",
+    "workforce": "transfer delays from Reserve and between occupied jobs",
+    "news": "shortage hysteresis, milestone thresholds and retention limits"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "schema": "schema_doc",
+  "describes": "events",
+  "note": "Schema documents describe the authoring contract. They are documentation: the loader skips content/schemas/ and they do not affect the catalog hash.",
+  "units": {
+    "quantity": "integer milli-units; 1000 == one displayed unit",
+    "ratio": "integer basis points; 10000 == 100%",
+    "power": "integer power-unit milli-units; power is never a stored commodity",
+    "work": "integer milli person-days",
+    "no_floating_point": "the loader rejects fractional and exponent literals outright"
+  },
+  "identifiers": "lowercase ASCII letters, digits and underscore; 1..64 characters",
+  "conditions": {
+    "whitelist": [
+      "All",
+      "Any",
+      "Not",
+      "CompareMetric",
+      "HasFlag",
+      "DaysSince",
+      "HasActiveEffect"
+    ],
+    "CompareMetric": {
+      "metric": "see docs/metrics.md for the readable set",
+      "scope": "planet, facility or sector",
+      "op": "lt, lte, gt, gte, eq, neq",
+      "value": "integer"
+    }
+  },
+  "effects": {
+    "design_whitelist": [
+      "TransferResource",
+      "ConsumeResource",
+      "ApplyModifier",
+      "ScheduleEffect",
+      "SetFlag",
+      "AdjustAdherence",
+      "AdjustStabilityTarget",
+      "OpenEvent"
+    ],
+    "implementation_additions": [
+      "SetConditionAtLeast",
+      "ClearModifiersByTag",
+      "ReplaceCrews",
+      "CloseEvent",
+      "GrantExternal"
+    ],
+    "additions_rationale": "docs/decisions/0002-effect-whitelist.md",
+    "faction": "optional; the effect applies only under that faction",
+    "target": "event_target, event_planet or sector"
+  },
+  "fields": {
+    "events[]": {
+      "id": "required",
+      "chain_id": "defaults to the event id; caps one chain per planet",
+      "scope": "planet or facility",
+      "applies_to_facility": "for facility scope, restricts the trigger to one facility type",
+      "queue_class": "survival, chain_deadline, faction_review or new_warning",
+      "condition": "trigger condition tree",
+      "consecutive_days": "the condition must hold this many consecutive days",
+      "condition_resolved": "evaluated daily while open; closes the instance through on_resolve",
+      "decision_deadline_days": "days the player has to choose; 0 means no decision window",
+      "cooldown_days": "days before the same event may reopen on that planet",
+      "pauses_simulation": "auto-pause while the player reads",
+      "sector_unique": "at most one open instance across the sector",
+      "expire_keeps_open": "on expiry, drop the deadline but keep the remedies selectable",
+      "choices[]": {
+        "id": "required",
+        "cost": "resource map paid from local available stock",
+        "required_reserve_workers": "integer",
+        "required_assigned_workers": "integer",
+        "resolution": "resolve or keep_open",
+        "cancels_scheduled_from": "choice ids whose not-yet-due consequences this cancels",
+        "effects": "effect list"
+      }
+    }
+  }
+}

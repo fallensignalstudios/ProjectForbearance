@@ -1,0 +1,21 @@
+{
+  "schema": "schema_doc",
+  "describes": "planets",
+  "note": "Schema documents describe the authoring contract. They are documentation: the loader skips content/schemas/ and they do not affect the catalog hash.",
+  "units": {
+    "quantity": "integer milli-units; 1000 == one displayed unit",
+    "ratio": "integer basis points; 10000 == 100%",
+    "power": "integer power-unit milli-units; power is never a stored commodity",
+    "work": "integer milli person-days",
+    "no_floating_point": "the loader rejects fractional and exponent literals outright"
+  },
+  "identifiers": "lowercase ASCII letters, digits and underscore; 1..64 characters",
+  "fields": {
+    "planets[]": {
+      "id": "required",
+      "slot_count": "required",
+      "resource_capacity": "required; per-resource store capacity in milli-units",
+      "efficiency": "map of efficiency class to output modifier in basis points"
+    }
+  }
+}

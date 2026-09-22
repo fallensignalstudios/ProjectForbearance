@@ -1,0 +1,39 @@
+{
+  "schema": "schema_doc",
+  "describes": "scenarios",
+  "note": "Schema documents describe the authoring contract. They are documentation: the loader skips content/schemas/ and they do not affect the catalog hash.",
+  "units": {
+    "quantity": "integer milli-units; 1000 == one displayed unit",
+    "ratio": "integer basis points; 10000 == 100%",
+    "power": "integer power-unit milli-units; power is never a stored commodity",
+    "work": "integer milli person-days",
+    "no_floating_point": "the loader rejects fractional and exponent literals outright"
+  },
+  "identifiers": "lowercase ASCII letters, digits and underscore; 1..64 characters",
+  "fields": {
+    "scenarios[]": {
+      "id": "required",
+      "start_day": "defaults 0",
+      "planets[]": {
+        "planet_id": "must exist",
+        "colonised": "bool",
+        "population": "people",
+        "workers": "working-age workers; must not exceed population",
+        "stocks": "resource map; must not exceed the planet's capacity",
+        "facilities[]": {
+          "facility_id": "must exist",
+          "recipe_id": "a variant of that facility",
+          "assigned_workers": "-1 means full staff",
+          "condition_bp": "within the global condition range"
+        }
+      },
+      "expedition": "one-use charter; cargo may not exceed the debited launch cost",
+      "freight": "the single reusable freighter and its route endpoints",
+      "mandate": "the external supply demand, its dates and its negotiated alternative",
+      "relief": "the once-per-world external relief contract",
+      "completion": "the completion predicates and their thresholds",
+      "survival": "the survival-emergency and failure day counts",
+      "events": "ids of the events active in this scenario"
+    }
+  }
+}
