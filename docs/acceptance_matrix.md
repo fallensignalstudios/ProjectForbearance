@@ -38,7 +38,7 @@ session.
 | T25 | News truth, deduplication and transition-only reporting | Unit-verified | `t25_news_truth` |
 | T26 | Same day count gives the same result at any batch size | Unit-verified | `t26_step_batching`, `t26_finished_scenario_is_idle` |
 | T27 | Randomised valid commands preserve every invariant | Unit-verified (400 days by default; `EXPANSION_SOAK_DAYS` raises it for a nightly run) | `t27_soak` |
-| T28 | A player can trace an alert to its cause and act through the same API | **Defined and partly Implemented** | The view content is verified by `read_models_render`; without a graphical shell the test itself cannot be run |
+| T28 | A player can trace an alert to its cause and act through the same API | **Defined and partly Implemented** | The view content is verified by `read_models_render` and `news_renders_without_placeholders`; without a graphical shell the test itself cannot be run |
 | T29 | One recorded Complete run per faction on the shipped catalog | Unit-verified | `t29_complete_run_dominion`, `t29_complete_run_reformation`, plus `golden_compromised_run`, `golden_relief_and_loss`, `golden_no_developer_grants` |
 | T30 | Four of five first-time testers identify a recorded cause | **Defined only** | Requires players; not attempted |
 

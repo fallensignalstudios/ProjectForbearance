@@ -22,6 +22,11 @@ const std::string& lookup(const std::string& key);
 std::string format(const std::string& key, const std::vector<NamedValue>& args,
                    const std::vector<std::string>& text_args);
 
+// Turns a content id into the words a reader expects: "iron_ore" becomes
+// "Iron Ore", "extraction_site" becomes "Extraction Site". Identity stays the id;
+// this is display only (TDD 4.1).
+std::string display_name(const std::string& content_id);
+
 std::string news_line(const NewsRecord& n);
 std::string fact_line(const FactRecord& f);
 // Plain-language rendering of a typed reason id.

@@ -10,7 +10,7 @@ const std::map<std::string, std::string>& strings() {
       {"news.first_delivery", "First {0} delivery accepted at {planet}: {quantity} units."},
       {"news.first_return_delivery_departed", "The freighter left {planet} carrying a return shipment."},
       {"news.colony_launched", "The colony expedition departed for {0}; it arrives on day {arrival_day}."},
-      {"news.colony_founded", "{0} is founded. The expedition delivered its surviving cargo."},
+      {"news.colony_founded", "{planet} is founded. The expedition delivered its surviving cargo."},
       {"news.construction_completed", "Construction of {0} finished at {planet}; it is usable tomorrow."},
       {"news.shortage_opened", "{0} has been short at {planet} for {missed_days} days."},
       {"news.recovery", "{0} supply at {planet} has recovered."},
@@ -95,6 +95,26 @@ std::string render_number(const std::string& name, std::int64_t value) {
 
 }  // namespace
 
+std::string display_name(const std::string& content_id) {
+  std::string out;
+  out.reserve(content_id.size());
+  bool start_of_word = true;
+  for (char c : content_id) {
+    if (c == '_') {
+      out.push_back(' ');
+      start_of_word = true;
+      continue;
+    }
+    if (start_of_word && c >= 'a' && c <= 'z') {
+      out.push_back(static_cast<char>(c - 'a' + 'A'));
+    } else {
+      out.push_back(c);
+    }
+    start_of_word = false;
+  }
+  return out;
+}
+
 const std::string& lookup(const std::string& key) {
   auto it = strings().find(key);
   if (it != strings().end()) return it->second;
@@ -128,7 +148,7 @@ std::string format(const std::string& key, const std::vector<NamedValue>& args,
     if (!name.empty() && name[0] >= '0' && name[0] <= '9') {
       const std::size_t index = static_cast<std::size_t>(std::stoul(name));
       if (index < text_args.size()) {
-        out += text_args[index];
+        out += display_name(text_args[index]);
         replaced = true;
       }
     }
@@ -150,9 +170,10 @@ std::string news_line(const NewsRecord& n) {
   std::string body = format(n.template_key, n.args, n.text_args);
   // Substitute the planet name separately so it is never treated as a number.
   const std::string token = "{planet}";
+  const std::string name = n.planet_id.empty() ? std::string("The sector") : display_name(n.planet_id);
   std::size_t pos = body.find(token);
   while (pos != std::string::npos) {
-    body.replace(pos, token.size(), n.planet_id.empty() ? "the sector" : n.planet_id);
+    body.replace(pos, token.size(), name);
     pos = body.find(token);
   }
   std::ostringstream ss;

@@ -80,6 +80,11 @@ void print_usage() {
 
   expansion hash      --content=DIR --save=FILE
       Print the catalog hash and the canonical economic state hash.
+
+  expansion export    --content=DIR --save=FILE --out=FILE.json
+      Write a local diagnostic export of the run: the retained daily metrics, the
+      fact and news records, the freight voyages and the final report. It contains
+      no credentials, no personal identifiers and no machine paths.
 )";
 }
 
@@ -331,6 +336,138 @@ int command_verify(const Options& o) {
   return 0;
 }
 
+// A local, user-initiated diagnostic export (TDD 17.2). No analytics, no remote
+// telemetry, and nothing in it identifies the machine or the person.
+int command_export(const Options& o) {
+  Catalog catalog = load_catalog(o);
+  auto session = load_session(o, catalog);
+  const SessionState& s = session->state();
+  const ScenarioDef& sc = catalog.scenario(s.scenario_id);
+
+  json::Value root = json::Value::object({});
+  root.set("simulation_version", json::Value::string(s.simulation_version));
+  root.set("catalog_hash", json::Value::string(s.catalog_hash));
+  root.set("state_hash", json::Value::string(session->canonical_hash()));
+  root.set("scenario_id", json::Value::string(s.scenario_id));
+  root.set("faction_id", json::Value::string(s.faction_id));
+  root.set("day", json::Value::integer(s.day));
+  root.set("lifecycle", json::Value::string(session_lifecycle_id(s.lifecycle)));
+  root.set("adherence", json::Value::integer(s.political.adherence));
+  root.set("evaluation_day", json::Value::integer(sc.completion.evaluation_day));
+  root.set("colony_launch_by_day", json::Value::integer(sc.expedition.launch_deadline_day));
+  root.set("mandate_issue_day", json::Value::integer(sc.mandate.issue_day));
+  root.set("mandate_deadline_day", json::Value::integer(sc.mandate.deadline_day));
+  root.set("missed_colonial_food_manifests", json::Value::integer(s.history.missed_colonial_food_manifests));
+
+  json::Value resources = json::Value::array({});
+  for (int r = 0; r < catalog.resource_count(); ++r) resources.push_back(json::Value::string(catalog.resource(r).id));
+  root.set("resources", resources);
+
+  json::Value planets = json::Value::array({});
+  for (const auto& p : s.planets) {
+    json::Value e = json::Value::object({});
+    e.set("planet_id", json::Value::string(p.planet_id));
+    e.set("colonised", json::Value::boolean(p.colonised));
+    e.set("population", json::Value::integer(p.population));
+    e.set("workers_total", json::Value::integer(p.workers_total));
+    e.set("health_bp", json::Value::integer(p.health_bp));
+    e.set("stability_bp", json::Value::integer(p.stability_bp));
+    e.set("capacity_per_resource", json::Value::integer(p.inventory.capacity_per_resource));
+    json::Value facilities = json::Value::array({});
+    for (const auto& f : s.facilities) {
+      if (f.planet_id != p.planet_id) continue;
+      json::Value x = json::Value::object({});
+      x.set("id", json::Value::integer(static_cast<std::int64_t>(f.id)));
+      x.set("facility_id", json::Value::string(f.facility_id));
+      x.set("recipe_id", json::Value::string(f.recipe_id));
+      x.set("lifecycle", json::Value::string(facility_lifecycle_id(f.lifecycle)));
+      x.set("assigned_workers", json::Value::integer(f.assigned_workers));
+      x.set("condition_bp", json::Value::integer(f.condition_bp));
+      x.set("primary_reason", json::Value::string(f.last_explanation.primary_reason));
+      x.set("actual_throughput_bp", json::Value::integer(f.last_explanation.actual_throughput_bp));
+      facilities.push_back(x);
+    }
+    e.set("facilities", facilities);
+    planets.push_back(e);
+  }
+  root.set("planets", planets);
+
+  json::Value samples = json::Value::array({});
+  for (const auto& x : s.history.samples) {
+    json::Value e = json::Value::object({});
+    e.set("day", json::Value::integer(x.day));
+    e.set("planet_id", json::Value::string(x.planet_id));
+    e.set("health_bp", json::Value::integer(x.health_bp));
+    e.set("stability_bp", json::Value::integer(x.stability_bp));
+    e.set("food_fulfilment_bp", json::Value::integer(x.food_fulfilment_bp));
+    e.set("water_fulfilment_bp", json::Value::integer(x.water_fulfilment_bp));
+    e.set("power_fulfilment_bp", json::Value::integer(x.power_fulfilment_bp));
+    json::Value stock = json::Value::array({});
+    for (Milli v : x.closing_stock) stock.push_back(json::Value::integer(v));
+    e.set("closing_stock", stock);
+    samples.push_back(e);
+  }
+  root.set("samples", samples);
+
+  json::Value news = json::Value::array({});
+  for (const auto& n : s.news) {
+    json::Value e = json::Value::object({});
+    e.set("day", json::Value::integer(n.day));
+    e.set("planet_id", json::Value::string(n.planet_id));
+    e.set("priority", json::Value::integer(n.priority));
+    e.set("template_key", json::Value::string(n.template_key));
+    e.set("text", json::Value::string(text::news_line(n)));
+    news.push_back(e);
+  }
+  root.set("news", news);
+
+  // Freight movements, reconstructed from the recorded facts.
+  json::Value voyages = json::Value::array({});
+  for (const auto& f : s.facts) {
+    if (f.kind != "ship_departed" && f.kind != "ship_arrived" && f.kind != "mission_departed" &&
+        f.kind != "mandate_delivery_accepted" && f.kind != "ship_returned_from_front" &&
+        f.kind != "missed_colonial_manifest") {
+      continue;
+    }
+    json::Value e = json::Value::object({});
+    e.set("day", json::Value::integer(f.day));
+    e.set("kind", json::Value::string(f.kind));
+    e.set("planet_id", json::Value::string(f.planet_id));
+    json::Value args = json::Value::object({});
+    for (const auto& a : f.args) args.set(a.key, json::Value::integer(a.value));
+    e.set("args", args);
+    json::Value text_args = json::Value::array({});
+    for (const auto& t : f.text_args) text_args.push_back(json::Value::string(t));
+    e.set("text_args", text_args);
+    voyages.push_back(e);
+  }
+  root.set("voyages", voyages);
+
+  json::Value mandate = json::Value::object({});
+  mandate.set("issued", json::Value::boolean(s.demand.issued));
+  mandate.set("decision", json::Value::string(mandate_decision_id(s.demand.decision)));
+  json::Value required = json::Value::object({});
+  for (const auto& [idx, qty] : s.demand.required) required.set(catalog.resource(idx).id, json::Value::integer(qty));
+  mandate.set("required", required);
+  json::Value delivered = json::Value::object({});
+  for (const auto& [idx, qty] : s.demand.delivered) delivered.set(catalog.resource(idx).id, json::Value::integer(qty));
+  mandate.set("delivered", delivered);
+  root.set("mandate", mandate);
+
+  json::Value predicates = json::Value::array({});
+  for (const auto& f : s.facts) {
+    if (f.kind != "scenario_evaluated") continue;
+    for (const auto& t : f.text_args) predicates.push_back(json::Value::string(t));
+  }
+  root.set("unmet_predicates", predicates);
+
+  const std::string out = o.get("out", "expansion_export.json");
+  json::write_file_atomic(out, json::serialize_pretty(root) + "\n");
+  std::cout << "exported " << s.history.samples.size() << " daily samples, " << s.news.size()
+            << " news entries and " << voyages.as_array().size() << " freight events to " << out << "\n";
+  return 0;
+}
+
 int command_hash(const Options& o) {
   Catalog catalog = load_catalog(o);
   std::cout << "catalog " << catalog.hash() << "\n";
@@ -363,6 +500,7 @@ int main(int argc, char** argv) {
     if (verb == "replay") return command_replay(o);
     if (verb == "verify") return command_verify(o);
     if (verb == "hash") return command_hash(o);
+    if (verb == "export") return command_export(o);
     std::cerr << "unknown command '" << verb << "'\n\n";
     print_usage();
     return 2;

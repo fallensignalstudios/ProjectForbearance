@@ -2,6 +2,7 @@
 // contract (TDD 14).
 #include "expansion/derived.hpp"
 #include "expansion/read_models.hpp"
+#include "expansion/text.hpp"
 #include "harness.hpp"
 
 using namespace expansion;
@@ -117,4 +118,78 @@ TEST(reserve_floor_protects_export_not_civilians, "the default Food floor holds 
   // Civilians are still served from stock on day one.
   session->step_day();
   CHECK_EQ(session->state().planet("homeworld").last_day.food_fulfilment_bp, kBpOne);
+}
+
+TEST(news_renders_without_placeholders, "no rendered news line ships with an unsubstituted placeholder") {
+  const Catalog& catalog = testing::shipped_catalog();
+  // Walk several runs so most templates get exercised, including the accident
+  // chain and the relief path.
+  struct Run {
+    const char* scenario;
+    const char* faction;
+    bool break_water;
+  };
+  const Run runs[] = {{"first_dependency", "dominion", false}, {"first_dependency", "reformation", true}};
+  int rendered = 0;
+  for (const auto& r : runs) {
+    auto session = testing::new_session(catalog, r.scenario, r.faction);
+    Command launch;
+    launch.id = "launch";
+    launch.kind = CommandKind::LaunchColonization;
+    session->apply_command(launch);
+    if (r.break_water) {
+      for (const char* recipe : {"waterworks_water", "agriculture_food"}) {
+        Command idle;
+        idle.id = std::string("idle_") + recipe;
+        idle.kind = CommandKind::SetFacilityIdle;
+        idle.facility_id = testing::find_facility(*session, "homeworld", recipe);
+        idle.flag = true;
+        session->apply_command(idle);
+      }
+    }
+    Command policy;
+    policy.id = "policy";
+    policy.kind = CommandKind::SelectPolicy;
+    policy.planet_id = "homeworld";
+    policy.content_id = "rationing";
+    session->apply_command(policy);
+    for (int i = 0; i < 40 && session->state().lifecycle == SessionLifecycle::Running; ++i) session->step_day();
+
+    for (const auto& n : session->state().news) {
+      const std::string line = text::news_line(n);
+      ++rendered;
+      CHECK_MSG(line.find('{') == std::string::npos,
+                "news template '" + n.template_key + "' left a placeholder unfilled: " + line);
+      CHECK_MSG(line.find('}') == std::string::npos,
+                "news template '" + n.template_key + "' left a placeholder unfilled: " + line);
+      // A template with no entry at all renders as its own key, which is also a
+      // defect rather than a message.
+      CHECK_MSG(line.find(n.template_key) == std::string::npos,
+                "news template '" + n.template_key + "' has no display string");
+    }
+  }
+  CHECK(rendered > 20);
+}
+
+TEST(display_names_are_readable, "content ids are rendered as words, never as raw identifiers") {
+  CHECK_EQ(text::display_name("iron_ore"), std::string("Iron Ore"));
+  CHECK_EQ(text::display_name("extraction_site"), std::string("Extraction Site"));
+  CHECK_EQ(text::display_name("homeworld"), std::string("Homeworld"));
+  CHECK_EQ(text::display_name(""), std::string(""));
+
+  const Catalog& catalog = testing::shipped_catalog();
+  auto session = testing::new_session(catalog, "first_dependency", "dominion");
+  Command launch;
+  launch.id = "launch";
+  launch.kind = CommandKind::LaunchColonization;
+  CHECK(session->apply_command(launch).accepted);
+  for (int i = 0; i < 20; ++i) session->step_day();
+  bool saw_resource_line = false;
+  for (const auto& n : session->state().news) {
+    const std::string line = text::news_line(n);
+    CHECK_MSG(line.find("iron_ore") == std::string::npos, "a raw resource id reached the reader: " + line);
+    CHECK_MSG(line.find("extraction_site") == std::string::npos, "a raw facility id reached the reader: " + line);
+    if (line.find("Iron Ore") != std::string::npos) saw_resource_line = true;
+  }
+  CHECK(saw_resource_line);
 }

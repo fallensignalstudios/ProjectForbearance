@@ -29,7 +29,7 @@ cmake --build build/dev
 ./build/dev/expansion_tests
 ```
 
-The suite runs 80 tests, including the acceptance matrix of Section 18.2, the
+The suite runs 82 tests, including the acceptance matrix of Section 18.2, the
 deliberately broken Coal-supply fixture, and four recorded runs replayed as golden
 fixtures. A single test can be selected with
 `--filter=t05`. GCC and Clang builds produce identical canonical hashes for every
@@ -52,6 +52,10 @@ recorded run, and continuous integration builds both with warnings as errors.
 ./build/dev/expansion show --content=content --save=/tmp/slot.json --view=freight
 ./build/dev/expansion show --content=content --save=/tmp/slot.json --view=history
 ./build/dev/expansion show --content=content --save=/tmp/slot.json --view=ledger --day=40
+
+# Write a local diagnostic export of the whole run: daily metrics, dispatches,
+# freight movements and the final report.
+./build/dev/expansion export --content=content --save=/tmp/slot.json --out=/tmp/run.json
 
 # Arrival-aware forecast on a clone. The live state is untouched.
 ./build/dev/expansion forecast --content=content --save=/tmp/slot.json --days=30
