@@ -60,6 +60,21 @@ and sinks from the transaction ledger, for every day of a run.
 depends on: the payload a day hash re-serialises must not grow with elapsed history.
 See `docs/decisions/0008-incremental-day-hash.md`.
 
+## Open findings against the numerical seed
+
+Section 21.2's named next step after the neutral calibration is a deliberately
+broken Coal-supply fixture with a readable explanation. That fixture exists, and it
+raises one finding.
+
+**Coal exhaustion on Homeworld is unrecoverable.** The Colony Hub's 20 passive solar
+exactly equals a thousand residents' protected demand, so once the Coal stockpile
+reaches zero on day 11 no facility can run, including the mine whose output would
+restore generation. Acting one day earlier recovers completely. This contradicts the
+stated intent of Section 8.3 and realises the risk named in Section 21.1. No balance
+value has been changed, because the fix moves figures that Section 9.3 states
+exactly. Four options are laid out for approval A04 in
+`docs/decisions/0009-coal-exhaustion-is-unrecoverable.md`.
+
 ## Deliberate gaps
 
 - **No packaged build.** A Linux headless pass does not prove Windows packaging or

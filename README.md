@@ -92,7 +92,11 @@ interface, so accessibility and the comprehension gate remain untested; a
 performance benchmark, because no reference machine has been named; and every
 system Section 20 defers, including population growth, which is exactly zero.
 
-`docs/acceptance_matrix.md` records the evidence level of each test individually.
+`docs/acceptance_matrix.md` records the evidence level of each test individually,
+and one open finding against the numerical seed: Coal exhaustion on Homeworld is
+unrecoverable, because the Hub's solar output exactly equals protected residential
+demand. That needs a balance decision, not a code change, and the options are in
+`docs/decisions/0009-coal-exhaustion-is-unrecoverable.md`.
 
 ## Authority
 

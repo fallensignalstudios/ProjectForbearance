@@ -143,7 +143,17 @@ Each of these is a documented decision in `docs/decisions/`, not a silent change
 - Performance budgets are unmeasured against a named machine. The figures in
   `docs/acceptance_matrix.md` describe this container only.
 
-## 8. Traceability
+## 8. Open findings
+
+The deliberately broken Coal-supply fixture that Section 21.2 names as the next step
+after the neutral calibration raises one contradiction in the seed: Section 8.3's
+intent that solar permits partial recovery after a fuel shortage does not hold at
+Homeworld's population, where the Hub's 20 solar exactly equals 20 of protected
+residential demand. Recorded, with options, in
+`docs/decisions/0009-coal-exhaustion-is-unrecoverable.md`. Nothing was changed
+silently.
+
+## 9. Traceability
 
 `docs/acceptance_matrix.md` maps each test in Section 18.2 of the design to the
 test that exercises it and the evidence level reached. `docs/metrics.md` lists the
