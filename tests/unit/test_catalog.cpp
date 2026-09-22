@@ -1,5 +1,6 @@
 #include "expansion/host_files.hpp"
 // Catalog structural and semantic validation (TDD 4.3).
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 

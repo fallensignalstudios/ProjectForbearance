@@ -1,5 +1,6 @@
 // Phases 4-7 of TDD 5.2: power, production, commit and needs, construction.
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 
 #include "sim_internal.hpp"

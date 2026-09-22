@@ -1,3 +1,5 @@
+#include <cstddef>
+
 #include "expansion/save_file.hpp"
 
 #include "expansion/json.hpp"

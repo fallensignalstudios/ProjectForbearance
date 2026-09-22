@@ -1,4 +1,6 @@
 // T10-T15: freight, the expedition and world efficiency (TDD 18.2).
+#include <cstddef>
+
 #include "expansion/derived.hpp"
 #include "harness.hpp"
 

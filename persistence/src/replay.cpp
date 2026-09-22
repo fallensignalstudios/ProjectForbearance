@@ -1,3 +1,5 @@
+#include <cstddef>
+
 #include "expansion/replay.hpp"
 
 #include "expansion/json.hpp"

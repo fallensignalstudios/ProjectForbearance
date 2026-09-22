@@ -1,4 +1,6 @@
 // T16-T21: policies, the accident chain, political meters, the mandate, relief.
+#include <cstddef>
+
 #include "harness.hpp"
 
 using namespace expansion;

@@ -79,6 +79,13 @@ jobs:
       - name: The three source lists agree
         run: python3 tools/check_amalgamation.py
 
+      # A standard-library name reaching a file through another standard header's
+      # internals compiles until it does not: std::reverse in test_host_api.cpp
+      # built with GCC 13 and Clang 18 and failed on this runner's Clang. Two
+      # green compilers were not evidence. This check does not depend on either.
+      - name: Every standard-library name has an included header
+        run: python3 tools/check_includes.py
+
       - name: Configure and build the single translation unit
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEXPANSION_WERROR=ON

@@ -2,6 +2,7 @@
 // checked in test_derived.cpp; these check that the same information survives as
 // fields, with identity and display text kept apart.
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/text.hpp"
 #include "expansion/view_models.hpp"

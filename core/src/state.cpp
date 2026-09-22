@@ -1,6 +1,7 @@
 #include "expansion/state.hpp"
 
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/sha256.hpp"
 

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/metrics.hpp"
 #include "sim_internal.hpp"

@@ -1,6 +1,7 @@
 #include "expansion/state_codec.hpp"
 
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/derived.hpp"
 #include "expansion/reasons.hpp"

@@ -1,6 +1,7 @@
 #include "expansion/read_models.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <iomanip>
 #include <sstream>
 

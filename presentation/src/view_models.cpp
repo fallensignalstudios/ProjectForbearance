@@ -1,6 +1,7 @@
 #include "expansion/view_models.hpp"
 
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/derived.hpp"
 #include "expansion/text.hpp"

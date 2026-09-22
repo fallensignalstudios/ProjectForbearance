@@ -2,6 +2,7 @@
 // fixed-step time (TDD 5.3) and event-driven view invalidation (TDD 17.3, E3).
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 
 #include "expansion/host_services.hpp"
 #include "harness.hpp"

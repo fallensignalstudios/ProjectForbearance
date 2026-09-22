@@ -1,5 +1,6 @@
 // T01, T03-T09: the daily economy (TDD 18.2).
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/derived.hpp"
 #include "harness.hpp"

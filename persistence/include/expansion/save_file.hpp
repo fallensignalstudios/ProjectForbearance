@@ -4,6 +4,7 @@
 // anti-cheat, and nothing in a save is executed or used as a file path.
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <vector>
 

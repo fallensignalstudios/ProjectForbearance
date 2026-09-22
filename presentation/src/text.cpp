@@ -1,5 +1,6 @@
 #include "expansion/text.hpp"
 
+#include <cstddef>
 #include <sstream>
 
 namespace expansion::text {

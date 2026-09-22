@@ -1,6 +1,7 @@
 #include "expansion/sha256.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstring>
 #include <vector>
 

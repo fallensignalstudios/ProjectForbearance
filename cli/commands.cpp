@@ -1,6 +1,7 @@
 #include "commands.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <sstream>
 
 namespace expansion::cli {

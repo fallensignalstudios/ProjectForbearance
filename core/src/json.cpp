@@ -1,6 +1,8 @@
 #include "expansion/json.hpp"
 
+#include <cstddef>
 #include <cstring>
+#include <utility>
 
 namespace expansion::json {
 

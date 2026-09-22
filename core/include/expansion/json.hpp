@@ -14,6 +14,7 @@
 //     (TDD 16.4).
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>

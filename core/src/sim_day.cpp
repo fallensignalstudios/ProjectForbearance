@@ -1,5 +1,6 @@
 // The daily resolver: StepDay and phases 1-3 and 10 of TDD 5.2.
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/metrics.hpp"
 #include "expansion/sha256.hpp"

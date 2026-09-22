@@ -1,5 +1,6 @@
 // T22-T24, T26, T27: replay determinism, save safety, forecast purity, lifecycle
 // and a bounded soak.
+#include <cstddef>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>

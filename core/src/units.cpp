@@ -1,5 +1,6 @@
 #include "expansion/units.hpp"
 
+#include <cstddef>
 #include <cstdlib>
 
 namespace expansion {

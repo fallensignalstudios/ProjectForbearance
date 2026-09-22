@@ -2,6 +2,7 @@
 // (TDD 3.2). It contains no economy of its own: every change goes through the
 // same command API the interface uses.
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <filesystem>
 #include <iostream>

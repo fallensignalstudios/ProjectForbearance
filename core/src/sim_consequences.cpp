@@ -2,6 +2,7 @@
 // events, fact summaries and news. Effects opened here begin no earlier than the
 // next day.
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 
 #include "expansion/metrics.hpp"

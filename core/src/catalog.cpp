@@ -1,6 +1,7 @@
 #include "expansion/catalog.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <functional>
 #include <set>
 

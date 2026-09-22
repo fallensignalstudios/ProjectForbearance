@@ -2,6 +2,7 @@
 // simulation days, including while paused. A rejected command alters neither
 // state nor schedule.
 #include <algorithm>
+#include <cstddef>
 #include <limits>
 
 #include "expansion/metrics.hpp"

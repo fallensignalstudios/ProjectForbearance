@@ -1,5 +1,6 @@
 // Session creation, cloning, hashing and forecasting (TDD 19.2).
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/sha256.hpp"
 #include "expansion/state_codec.hpp"

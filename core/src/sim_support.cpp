@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstddef>
 
 #include "expansion/derived.hpp"
 #include "expansion/metrics.hpp"

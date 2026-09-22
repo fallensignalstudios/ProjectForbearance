@@ -1,6 +1,8 @@
 // The host boundary: nothing in api.hpp may throw, whatever it is handed.
 // Unreal disables exceptions in most module configurations, so a throw crossing
 // this line is a crash in a packaged build rather than a handled error.
+#include <algorithm>
+#include <cstddef>
 #include <string>
 
 #include "expansion/api.hpp"
