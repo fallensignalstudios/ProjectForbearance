@@ -28,6 +28,7 @@ endif()
 
 add_library(expansion_core STATIC
   core/src/api.cpp
+  core/src/host_services.cpp
   core/src/units.cpp
   core/src/json.cpp
   core/src/sha256.cpp
@@ -93,6 +94,7 @@ if(EXPANSION_BUILD_TESTS)
     tests/integration/test_golden.cpp
     tests/integration/test_coal_shortage.cpp
     tests/integration/test_host_api.cpp
+    tests/integration/test_host_services.cpp
   )
   target_include_directories(expansion_tests PRIVATE tests)
   target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation
