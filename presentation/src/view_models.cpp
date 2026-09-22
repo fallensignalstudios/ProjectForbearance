@@ -73,7 +73,7 @@ NeedRow need_row(const char* id, Bp fulfilment, Milli demand, Milli served) {
   return row;
 }
 
-const RecipeDef* recipe_of(const Catalog& catalog, const FacilityState& f) {
+const RecipeDef* active_recipe(const Catalog& catalog, const FacilityState& f) {
   const FacilityDef* def = catalog.find_facility(f.facility_id);
   if (def == nullptr) return nullptr;
   const int index = def->recipe_index(f.recipe_id);
@@ -121,9 +121,7 @@ const char* mandate_status(const DemandState& d) {
   return "";
 }
 
-}  // namespace
-
-SectorView sector(const Session& session) {
+SectorView build_sector(const Session& session) {
   const SessionState& s = session.state();
   const Catalog& catalog = session.catalog();
   SectorView out;
@@ -155,7 +153,7 @@ SectorView sector(const Session& session) {
   return out;
 }
 
-PlanetView planet(const Session& session, const std::string& planet_id) {
+PlanetView build_planet(const Session& session, const std::string& planet_id) {
   const SessionState& s = session.state();
   const Catalog& catalog = session.catalog();
   const PlanetState* p = s.find_planet(planet_id);
@@ -209,7 +207,7 @@ PlanetView planet(const Session& session, const std::string& planet_id) {
   return out;
 }
 
-FacilityCard facility(const Session& session, InstanceId facility_id) {
+FacilityCard build_facility(const Session& session, InstanceId facility_id) {
   const SessionState& s = session.state();
   const Catalog& catalog = session.catalog();
   const FacilityState* f = s.find_facility(facility_id);
@@ -217,7 +215,7 @@ FacilityCard facility(const Session& session, InstanceId facility_id) {
     throw SimError(ErrorCode::NotFound, "view: no facility " + to_decimal_string_u(facility_id));
   }
   const FacilityExplanation& x = f->last_explanation;
-  const RecipeDef* recipe = recipe_of(catalog, *f);
+  const RecipeDef* recipe = active_recipe(catalog, *f);
 
   FacilityCard out;
   out.id = f->id;
@@ -268,7 +266,7 @@ FacilityCard facility(const Session& session, InstanceId facility_id) {
   return out;
 }
 
-FreightView freight(const Session& session) {
+FreightView build_freight(const Session& session) {
   const SessionState& s = session.state();
   const Catalog& catalog = session.catalog();
   const ShipState& ship = s.ship;
@@ -313,7 +311,7 @@ FreightView freight(const Session& session) {
   return out;
 }
 
-std::vector<DecisionCard> decisions(const Session& session) {
+std::vector<DecisionCard> build_decisions(const Session& session) {
   const SessionState& s = session.state();
   const Catalog& catalog = session.catalog();
   std::vector<DecisionCard> out;
@@ -393,7 +391,7 @@ std::vector<DecisionCard> decisions(const Session& session) {
   return out;
 }
 
-std::vector<HistoryEntry> history(const Session& session, int max_entries) {
+std::vector<HistoryEntry> build_history(const Session& session, int max_entries) {
   const SessionState& s = session.state();
   std::vector<HistoryEntry> out;
   if (max_entries <= 0) return out;
@@ -410,6 +408,54 @@ std::vector<HistoryEntry> history(const Session& session, int max_entries) {
     out.push_back(entry);
   }
   return out;
+}
+
+}  // namespace
+
+// ---------------------------------------------------------------------------
+// The non-throwing boundary. Mirrors api.hpp's guard so a host compiled without
+// exceptions can call every view.
+// ---------------------------------------------------------------------------
+
+namespace {
+
+template <typename T, typename Fn>
+api::Outcome<T> guard(Fn&& fn) {
+  try {
+    return api::Outcome<T>::success(fn());
+  } catch (const SimError& e) {
+    return api::Outcome<T>::failure(e.code() == ErrorCode::Internal ? ErrorCode::Internal : e.code(), e.what());
+  } catch (const std::exception& e) {
+    return api::Outcome<T>::failure(ErrorCode::Internal, std::string("view: ") + e.what());
+  } catch (...) {
+    return api::Outcome<T>::failure(ErrorCode::Internal, "view: unknown failure");
+  }
+}
+
+}  // namespace
+
+api::Outcome<SectorView> sector(const Session& session) {
+  return guard<SectorView>([&] { return build_sector(session); });
+}
+
+api::Outcome<PlanetView> planet(const Session& session, const std::string& planet_id) {
+  return guard<PlanetView>([&] { return build_planet(session, planet_id); });
+}
+
+api::Outcome<FacilityCard> facility(const Session& session, InstanceId facility_id) {
+  return guard<FacilityCard>([&] { return build_facility(session, facility_id); });
+}
+
+api::Outcome<FreightView> freight(const Session& session) {
+  return guard<FreightView>([&] { return build_freight(session); });
+}
+
+api::Outcome<std::vector<DecisionCard>> decisions(const Session& session) {
+  return guard<std::vector<DecisionCard>>([&] { return build_decisions(session); });
+}
+
+api::Outcome<std::vector<HistoryEntry>> history(const Session& session, int max_entries) {
+  return guard<std::vector<HistoryEntry>>([&] { return build_history(session, max_entries); });
 }
 
 }  // namespace expansion::view

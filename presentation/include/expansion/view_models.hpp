@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+#include "expansion/api.hpp"
 #include "expansion/read_models.hpp"
 #include "expansion/session.hpp"
 
@@ -207,13 +208,19 @@ struct SectorView {
 
 // ---------------------------------------------------------------------------
 // Builders. Each takes a committed session and returns a value.
+//
+// Every one returns an Outcome rather than raising, for the same reason api.hpp
+// does: these are the calls a host makes, and a host module may be compiled with
+// exceptions disabled, where a throw crossing the boundary is a crash rather
+// than an error (TDD 19.2). A missing planet or facility is the ordinary failure;
+// anything the simulation raises internally arrives as Internal.
 // ---------------------------------------------------------------------------
 
-SectorView sector(const Session& session);
-PlanetView planet(const Session& session, const std::string& planet_id);
-FacilityCard facility(const Session& session, InstanceId facility_id);
-FreightView freight(const Session& session);
-std::vector<DecisionCard> decisions(const Session& session);
-std::vector<HistoryEntry> history(const Session& session, int max_entries);
+api::Outcome<SectorView> sector(const Session& session);
+api::Outcome<PlanetView> planet(const Session& session, const std::string& planet_id);
+api::Outcome<FacilityCard> facility(const Session& session, InstanceId facility_id);
+api::Outcome<FreightView> freight(const Session& session);
+api::Outcome<std::vector<DecisionCard>> decisions(const Session& session);
+api::Outcome<std::vector<HistoryEntry>> history(const Session& session, int max_entries);
 
 }  // namespace expansion::view

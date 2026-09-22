@@ -43,6 +43,15 @@ jobs:
       - name: Unit and integration tests
         run: ./build/expansion_tests
 
+      # The same suite against the single translation unit the Unreal module
+      # compiles. It is the only evidence available here that the engine's
+      # compilation arrangement produces the same simulation, and it catches the
+      # two hazards of sharing one unit -- a name collision between two file-static
+      # helpers, and a macro leaking from one source to the next -- without an
+      # engine (docs/decisions/0010-unreal-host.md).
+      - name: Unit and integration tests, as one translation unit
+        run: ./build/expansion_tests_amalgamated
+
       - name: Replay the golden fixtures
         run: tools/validate_content/validate_content.sh content build/expansion
 
@@ -50,6 +59,40 @@ jobs:
         run: |
           for journal in tests/replays/*.journal.json; do
             ./build/expansion verify --content=content --journal="$journal"
+          done
+
+  engine-compilation-path:
+    name: engine compilation path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+
+      # Three lists have to agree about which sources exist: the tree,
+      # CMakeLists.txt, and the Unreal module's translation unit. A source added
+      # to two of the three builds here and fails in an engine nobody can run
+      # here, or the reverse.
+      - name: The three source lists agree
+        run: python3 tools/check_amalgamation.py
+
+      - name: Configure and build the single translation unit
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DEXPANSION_WERROR=ON
+          cmake --build build --target expansion_amalgamated expansion_tests_amalgamated expansion_cli
+
+      # Compiling is not enough: it has to be the same simulation. Every golden
+      # replay hash is compared inside this suite.
+      - name: The single translation unit is the same simulation
+        run: ./build/expansion_tests_amalgamated
+
+      - name: Every recorded run replays identically
+        run: |
+          for journal in tests/replays/*.journal.json; do
+            ./build/expansion replay --content=content --journal="$journal"
           done
 
   cross-compiler-determinism:
@@ -86,5 +129,14 @@ jobs:
           exit $status
 
   # A Linux headless pass does not prove Windows packaging or an Unreal build.
-  # Those jobs belong here once the presentation host is approved, and their
-  # absence is deliberate rather than an oversight.
+  #
+  # The presentation host is now approved as Unreal Engine 5 (decision 0010), and
+  # the `engine-compilation-path` job above verifies everything about that path
+  # that can be verified without an engine: that the simulation compiles as the
+  # single translation unit the module uses, that it is the same simulation hash
+  # for hash, and that the source lists agree.
+  #
+  # What is still missing is a job that compiles `hosts/unreal/` itself, which
+  # needs an engine installation on the runner. Until that exists, nothing under
+  # `hosts/unreal/` has been compiled by anything, and every file there says so.
+  # A Windows packaging job is likewise absent. Both absences are deliberate.

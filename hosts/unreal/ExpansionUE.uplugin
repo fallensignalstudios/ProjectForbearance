@@ -1,0 +1,20 @@
+{
+    "FileVersion": 3,
+    "Version": 1,
+    "VersionName": "0.1.0",
+    "FriendlyName": "Sovereign Call: Expansion",
+    "Description": "The engine-independent colonial logistics simulation, hosted in Unreal Engine 5. The simulation itself is compiled from ../../core, ../../persistence and ../../presentation; this plugin is the presentation host and nothing more.",
+    "Category": "Gameplay",
+    "CreatedBy": "Fallen Signal Studios",
+    "EnabledByDefault": true,
+    "CanContainContent": true,
+    "IsBetaVersion": false,
+    "Installed": false,
+    "Modules": [
+        {
+            "Name": "ExpansionUE",
+            "Type": "Runtime",
+            "LoadingPhase": "Default"
+        }
+    ]
+}

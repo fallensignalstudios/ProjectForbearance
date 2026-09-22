@@ -30,7 +30,9 @@ const view::NeedRow* need_of(const view::PlanetView& p, const std::string& need_
 TEST(view_sector_answers_the_first_question, "the sector view carries risk, cause and the clock") {
   const Catalog& catalog = testing::shipped_catalog();
   auto session = testing::new_session(catalog, "first_dependency");
-  view::SectorView v = view::sector(*session);
+  auto v_out = view::sector(*session);
+  CHECK_MSG(v_out.ok(), v_out.error().message);
+  const view::SectorView& v = v_out.value();
   CHECK_EQ(v.day, 0);
   CHECK_EQ(v.evaluation_day, 120);
   CHECK_EQ(v.days_to_evaluation, 120);
@@ -41,7 +43,9 @@ TEST(view_sector_answers_the_first_question, "the sector view carries risk, caus
   CHECK(v.mandate_status_label.empty());
 
   for (int i = 0; i < 40; ++i) session->step_day();
-  view::SectorView later = view::sector(*session);
+  auto later_out = view::sector(*session);
+  CHECK(later_out.ok());
+  const view::SectorView& later = later_out.value();
   CHECK_EQ(later.day, 40);
   CHECK_EQ(later.days_to_evaluation, 80);
   CHECK_EQ(later.revision, session->state().revision);
@@ -56,7 +60,9 @@ TEST(view_planet_separates_identity_from_display, "a row carries the id and the 
   const Catalog& catalog = testing::shipped_catalog();
   auto session = testing::new_session(catalog, "first_dependency");
   session->step_day();
-  view::PlanetView p = view::planet(*session, "homeworld");
+  auto p_out = view::planet(*session, "homeworld");
+  CHECK_MSG(p_out.ok(), p_out.error().message);
+  const view::PlanetView& p = p_out.value();
   CHECK_EQ(p.planet_id, std::string("homeworld"));
   CHECK_EQ(p.label, std::string("Homeworld"));
   CHECK_EQ(p.stores.size(), static_cast<std::size_t>(catalog.resource_count()));
@@ -81,7 +87,9 @@ TEST(view_planet_reports_needs_and_power, "the five civilian needs are all prese
   const Catalog& catalog = testing::shipped_catalog();
   auto session = testing::new_session(catalog, "first_dependency");
   session->step_day();
-  view::PlanetView p = view::planet(*session, "homeworld");
+  auto p_out = view::planet(*session, "homeworld");
+  CHECK_MSG(p_out.ok(), p_out.error().message);
+  const view::PlanetView& p = p_out.value();
   CHECK_EQ(p.needs.size(), static_cast<std::size_t>(5));
   for (const char* id : {"food", "water", "power", "housing", "clinic"}) {
     const view::NeedRow* row = need_of(p, id);
@@ -96,8 +104,11 @@ TEST(view_planet_reports_needs_and_power, "the five civilian needs are all prese
   CHECK(!p.facilities.empty());
   CHECK_EQ(p.health_bp, session->state().planet("homeworld").health_bp);
 
-  // An unknown world is an error, not an empty view a host would draw as zeroes.
-  CHECK_THROWS(view::planet(*session, "nowhere"));
+  // An unknown world is a typed error, not a throw and not an empty view a host
+  // would draw as zeroes.
+  auto missing = view::planet(*session, "nowhere");
+  CHECK(!missing.ok());
+  CHECK_EQ(missing.error().code, ErrorCode::NotFound);
 }
 
 TEST(view_store_counts_down_when_it_drains, "a falling store reports days of cover") {
@@ -113,7 +124,9 @@ TEST(view_store_counts_down_when_it_drains, "a falling store reports days of cov
   CHECK(session->apply_command(idle).accepted);
   session->step_day();
 
-  view::PlanetView p = view::planet(*session, "homeworld");
+  auto p_out = view::planet(*session, "homeworld");
+  CHECK_MSG(p_out.ok(), p_out.error().message);
+  const view::PlanetView& p = p_out.value();
   const view::StockRow* ore = store_of(p, "iron_ore");
   CHECK(ore != nullptr);
   CHECK_EQ(ore->produced_today.value, 0);
@@ -137,7 +150,9 @@ TEST(view_facility_names_the_real_cause, "a card reports the typed reason, not a
   auto session = testing::new_session(catalog, "first_dependency");
   session->step_day();
   const InstanceId mine = testing::find_facility(*session, "homeworld", "extraction_iron");
-  view::FacilityCard card = view::facility(*session, mine);
+  auto card_out = view::facility(*session, mine);
+  CHECK_MSG(card_out.ok(), card_out.error().message);
+  const view::FacilityCard& card = card_out.value();
   CHECK_EQ(card.id, mine);
   CHECK_EQ(card.facility_id, std::string("extraction_site"));
   CHECK_EQ(card.recipe_id, std::string("extraction_iron"));
@@ -158,7 +173,9 @@ TEST(view_facility_names_the_real_cause, "a card reports the typed reason, not a
   CHECK(!card.outputs.empty());
   CHECK_EQ(card.outputs.front().label, std::string("Iron Ore"));
 
-  CHECK_THROWS(view::facility(*session, 999999));
+  auto missing_facility = view::facility(*session, 999999);
+  CHECK(!missing_facility.ok());
+  CHECK_EQ(missing_facility.error().code, ErrorCode::NotFound);
 }
 
 TEST(view_facility_shows_a_build_in_progress, "an unfinished job reports its crew and its progress") {
@@ -182,7 +199,9 @@ TEST(view_facility_shows_a_build_in_progress, "an unfinished job reports its cre
   CHECK(session->apply_command(crew).accepted);
   session->step_day();
 
-  view::FacilityCard card = view::facility(*session, job);
+  auto card_out = view::facility(*session, job);
+  CHECK_MSG(card_out.ok(), card_out.error().message);
+  const view::FacilityCard& card = card_out.value();
   CHECK(card.under_construction);
   CHECK_EQ(card.lifecycle, FacilityLifecycle::UnderConstruction);
   CHECK_EQ(card.assigned_workers, 15);   // the build crew, not the operating staff
@@ -195,7 +214,9 @@ TEST(view_facility_shows_a_build_in_progress, "an unfinished job reports its cre
 TEST(view_freight_describes_the_leg, "the freight view carries the phase, the clock and the manifest") {
   const Catalog& catalog = testing::shipped_catalog();
   auto session = testing::new_session(catalog, "first_dependency");
-  view::FreightView f = view::freight(*session);
+  auto f_out = view::freight(*session);
+  CHECK_MSG(f_out.ok(), f_out.error().message);
+  const view::FreightView& f = f_out.value();
   CHECK_EQ(f.phase, ShipPhase::Docked);
   CHECK(!f.phase_label.empty());
   CHECK_EQ(f.location_label, std::string("Homeworld"));
@@ -209,7 +230,9 @@ TEST(view_history_is_newest_first, "the archive reads backwards and renders thro
   const Catalog& catalog = testing::shipped_catalog();
   auto session = testing::new_session(catalog, "first_dependency");
   for (int i = 0; i < 30; ++i) session->step_day();
-  std::vector<view::HistoryEntry> entries = view::history(*session, 5);
+  auto entries_out = view::history(*session, 5);
+  CHECK_MSG(entries_out.ok(), entries_out.error().message);
+  const std::vector<view::HistoryEntry>& entries = entries_out.value();
   CHECK(!entries.empty());
   CHECK(entries.size() <= static_cast<std::size_t>(5));
   for (std::size_t i = 1; i < entries.size(); ++i) {
@@ -220,8 +243,12 @@ TEST(view_history_is_newest_first, "the archive reads backwards and renders thro
     // A template key that reached the reader is a bug, not a headline.
     CHECK(e.text.find("news.") == std::string::npos);
   }
-  CHECK(view::history(*session, 0).empty());
-  CHECK(view::history(*session, -1).empty());
+  auto none = view::history(*session, 0);
+  auto negative = view::history(*session, -1);
+  CHECK(none.ok());
+  CHECK(none.value().empty());
+  CHECK(negative.ok());
+  CHECK(negative.value().empty());
 }
 
 TEST(view_decisions_show_what_each_choice_costs, "an unaffordable option is marked, not hidden") {
@@ -233,7 +260,9 @@ TEST(view_decisions_show_what_each_choice_costs, "an unaffordable option is mark
   view::DecisionCard with_options;
   for (int i = 0; i < 60 && with_options.id == 0; ++i) {
     session->step_day();
-    for (const auto& card : view::decisions(*session)) {
+    auto opened = view::decisions(*session);
+    CHECK_MSG(opened.ok(), opened.error().message);
+    for (const auto& card : opened.value()) {
       CHECK(card.id != 0);
       CHECK(!card.event_id.empty());
       CHECK(!card.title.empty());

@@ -38,9 +38,28 @@ session.
 | T25 | News truth, deduplication and transition-only reporting | Unit-verified | `t25_news_truth` |
 | T26 | Same day count gives the same result at any batch size | Unit-verified | `t26_step_batching`, `t26_finished_scenario_is_idle` |
 | T27 | Randomised valid commands preserve every invariant | Unit-verified (400 days by default; `EXPANSION_SOAK_DAYS` raises it for a nightly run) | `t27_soak` |
-| T28 | A player can trace an alert to its cause and act through the same API | **Defined and partly Implemented** | The view content is verified by `read_models_render` and `news_renders_without_placeholders`; without a graphical shell the test itself cannot be run |
+| T28 | A player can trace an alert to its cause and act through the same API | **Defined and Implemented; not Integrated** | The text views by `read_models_render` and `news_renders_without_placeholders`; the structured views a widget binds by the `view_*` tests, including that every authored display name resolves and that a card reports a typed reason. Without a graphical shell the test as written cannot be run |
 | T29 | One recorded Complete run per faction on the shipped catalog | Unit-verified | `t29_complete_run_dominion`, `t29_complete_run_reformation`, plus `golden_compromised_run`, `golden_relief_and_loss`, `golden_no_developer_grants` |
 | T30 | Four of five first-time testers identify a recorded cause | **Defined only** | Requires players; not attempted |
+
+## Host services and the engine compilation path
+
+| ID | Property | Evidence | Where |
+| --- | --- | --- | --- |
+| H1 | Ten seconds is one day at 1x; four steps per frame at most, remainder retained and capped | Unit-verified | `tick_rate_matches_the_design`, `tick_retains_the_remainder`, `tick_never_exceeds_the_frame_cap` |
+| H2 | A stalled frame is clamped, not banked as elapsed play | Unit-verified | `tick_clamps_a_stalled_frame`, `tick_ignores_nonsense_deltas` |
+| H3 | Suspend, pause and a decision hold all discard the partial day, so no catch-up debt accrues | Unit-verified | `tick_stops_when_it_should` |
+| H4 | Day boundaries are identical at 30, 60, 72 and 144 fps | Unit-verified | `tick_does_not_drift` |
+| H5 | A committed change invalidates only the panels that moved; an unchanged state publishes nothing | Unit-verified | `changes_start_with_everything`, `changes_are_local_to_one_facility`, `changes_follow_a_day`, `changes_report_a_removed_facility` |
+| H6 | The simulation compiles as the single translation unit the engine module uses, under the same strict warnings | Unit-verified | the `expansion_amalgamated` target |
+| H7 | That single translation unit produces the same simulation, hash for hash | Unit-verified | `expansion_tests_amalgamated`: the whole suite, golden replays included |
+| H8 | The source tree, `CMakeLists.txt` and the engine module's translation unit list the same sources | Unit-verified | `tools/check_amalgamation.py`, in CI |
+| H9 | Every public view returns typed error information rather than throwing | Unit-verified | `api_never_throws`, and the `Outcome` returns of `view_models.hpp` |
+
+H1–H9 are Unit-verified and nothing more. The engine module that consumes them
+(`hosts/unreal/`) has never been compiled; approval A01 and the reasoning behind
+the compilation path are recorded in `docs/decisions/0010-unreal-host.md`, and the
+bring-up order is in `docs/unreal_integration.md`.
 
 ## Invariants checked at every commit
 
@@ -60,13 +79,25 @@ and sinks from the transaction ledger, for every day of a run.
 depends on: the payload a day hash re-serialises must not grow with elapsed history.
 See `docs/decisions/0008-incremental-day-hash.md`.
 
-## Open findings against the numerical seed
+## Open findings
+
+### An event instance records nothing about what opened it
+
+`EventInstance::trigger_facts` is declared, saved and hashed, and neither of the
+two sites that open an event populates it. A decision card therefore has no
+recorded provenance to show, and the causal link from a Safety Warning to the
+Mining Accident it escalates into exists only in the catalog. The views name the
+decision's subject instead, which is specific but is not provenance. Fixing it
+changes the canonical hash and would require re-recording all four golden
+journals, so it is recorded rather than done:
+`docs/decisions/0011-condition-trigger-provenance.md`.
+`view_pins_open_finding_0011` fails the moment the behaviour changes.
+
+### Coal exhaustion on Homeworld is unrecoverable
 
 Section 21.2's named next step after the neutral calibration is a deliberately
 broken Coal-supply fixture with a readable explanation. That fixture exists, and it
-raises one finding.
-
-**Coal exhaustion on Homeworld is unrecoverable.** The Colony Hub's 20 passive solar
+raises this finding. The Colony Hub's 20 passive solar
 exactly equals a thousand residents' protected demand, so once the Coal stockpile
 reaches zero on day 11 no facility can run, including the mine whose output would
 restore generation. Acting one day earlier recovers completely. This contradicts the
@@ -90,7 +121,14 @@ exactly. Four options are laid out for approval A04 in
   measurement has been taken because eight-planet content does not exist.
 - **Partial cross-toolchain determinism.** GCC 13 and Clang 18 builds of this
   repository produce identical final hashes for all four recorded runs, and the
-  continuous integration job builds both. That is one platform. Comparing a Windows
-  build, or an Unreal-hosted build, remains an unperformed test.
+  continuous integration job builds both. Both also agree with the
+  single-translation-unit build and with the portable-math build. That is still one
+  platform. Comparing a Windows build, or an Unreal-hosted build, remains an
+  unperformed test.
+- **Nothing engine-facing is compiled.** `hosts/unreal/` — the module rules, the
+  `USTRUCT` mirrors and the session subsystem — is written from the engine's
+  documented constraints and verified by no compiler. What is verified is the
+  arrangement it uses to compile the simulation (H6–H8). Every file under
+  `hosts/unreal/` says so at its head.
 - **No accessibility audit.** Screen-reader support and controller scope are
   untested, and no compliance is claimed.
