@@ -1,0 +1,51 @@
+# The First Dependency, a Compromised outcome.
+#
+# Every line is an ordinary player command through the same API the interface
+# uses. Nothing here grants resources or bypasses the daily resolver.
+
+note Day 0: the expedition is affordable from the opening stock, so launch at once.
+launch_colonization
+step 2
+
+note Day 2: the colony is founded. Staff the Hub for water and put the rest of the
+note arriving workers on the colony's first Spaceport.
+assign_workers planet=frontier to=@frontier:hub_water count=10
+start_construction planet=frontier facility_type=spaceport
+assign_workers planet=frontier to=@last count=20
+step 3
+
+note Day 5: the port is finished. Staff it from the released construction crew and
+note open the supply route. Each package is kept to 100 cargo volume so the colony's
+note reduced port service still clears a whole shipment in one day, which is what
+note keeps the ideal six-day cycle intact.
+assign_workers planet=frontier to=@frontier:spaceport_handling count=20
+update_route field=outbound food=65 steel=30 machinery=5
+update_route field=return iron_ore=100
+update_route field=enable flag=true
+step 4
+
+note Day 9: the package has landed. Start the colony's Extraction Site, then switch
+note the outbound manifest to food and maintenance machinery.
+start_construction planet=frontier facility_type=extraction_site recipe=extraction_iron
+assign_workers planet=frontier to=@last count=20
+update_route field=outbound food=95 machinery=5
+step 6
+
+note Day 15: staff the mine. Frontier now sends ore home while Homeworld sends food
+note out: that is the two-way dependence the prototype exists to test.
+assign_workers planet=frontier to=@frontier:extraction_iron count=20
+
+note Build the colony's food buffer for the weeks when the freighter serves the front.
+until day=70
+
+note Day 70: the freighter is docked at home. Take it off the colonial route now, so
+note no scheduled colonial manifest is missed while it is away.
+update_route field=enable flag=false
+until day=75
+
+note Day 75: the mandate is issued and declined. The civilian economy is never
+note interrupted, so the colony thrives, but the final report records political
+note compromise rather than a completed term.
+respond_to_demand response=decline
+update_route field=enable flag=true
+until day=120

@@ -80,11 +80,13 @@ if(EXPANSION_BUILD_TESTS)
     tests/integration/test_persistence.cpp
     tests/integration/test_scenario.cpp
     tests/integration/test_derived.cpp
+    tests/integration/test_golden.cpp
   )
   target_include_directories(expansion_tests PRIVATE tests)
   target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation)
   target_compile_definitions(expansion_tests PRIVATE
     EXPANSION_CONTENT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/content"
-    EXPANSION_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+    EXPANSION_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+    EXPANSION_REPLAY_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/replays")
   add_test(NAME expansion_tests COMMAND expansion_tests)
 endif()

@@ -1,5 +1,6 @@
 #include "commands.hpp"
 
+#include <algorithm>
 #include <sstream>
 
 namespace expansion::cli {
@@ -72,6 +73,35 @@ std::int64_t parse_integer(const std::string& s, int line_number) {
 
 }  // namespace
 
+InstanceId resolve_reference(const Session& session, const std::string& reference, int line_number) {
+  if (reference == "@last") {
+    InstanceId best = 0;
+    for (const auto& f : session.state().facilities) best = std::max(best, f.id);
+    if (best == 0) throw SimError("script line " + std::to_string(line_number) + ": no facility exists yet");
+    return best;
+  }
+  if (reference == "@open") {
+    const EventInstance* best = nullptr;
+    for (const auto& e : session.state().events) {
+      if (e.resolution != EventResolution::Open) continue;
+      if (best == nullptr || (e.deadline_day >= 0 && e.deadline_day < best->deadline_day)) best = &e;
+    }
+    if (best == nullptr) throw SimError("script line " + std::to_string(line_number) + ": no event is open");
+    return best->id;
+  }
+  const std::size_t colon = reference.find(':');
+  if (reference.size() < 3 || colon == std::string::npos) {
+    throw SimError("script line " + std::to_string(line_number) + ": '" + reference +
+                   "' is not @world:recipe, @last or @open");
+  }
+  const std::string planet = reference.substr(1, colon - 1);
+  const std::string recipe = reference.substr(colon + 1);
+  for (const auto& f : session.state().facilities) {
+    if (f.planet_id == planet && f.recipe_id == recipe) return f.id;
+  }
+  throw SimError("script line " + std::to_string(line_number) + ": no facility on " + planet + " runs '" + recipe + "'");
+}
+
 std::vector<ScriptStep> parse_script(const std::string& text, const Catalog& catalog) {
   std::vector<ScriptStep> out;
   std::istringstream lines(text);
@@ -135,11 +165,23 @@ std::vector<ScriptStep> parse_script(const std::string& text, const Catalog& cat
       } else if (key == "recipe") {
         step.command.recipe_id = value;
       } else if (key == "facility" || key == "from") {
-        step.command.facility_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        if (!value.empty() && value[0] == '@') {
+          step.facility_ref = value;
+        } else {
+          step.command.facility_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        }
       } else if (key == "to") {
-        step.command.to_facility_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        if (!value.empty() && value[0] == '@') {
+          step.to_facility_ref = value;
+        } else {
+          step.command.to_facility_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        }
       } else if (key == "event") {
-        step.command.event_instance_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        if (!value.empty() && value[0] == '@') {
+          step.event_ref = value;
+        } else {
+          step.command.event_instance_id = static_cast<InstanceId>(parse_integer(value, line_number));
+        }
       } else if (key == "count") {
         step.command.count = static_cast<int>(parse_integer(value, line_number));
       } else if (key == "band") {

@@ -1,0 +1,14 @@
+# A deliberately broken run: the explicit relief-and-loss path of Section 14.4.
+#
+# Homeworld's water supply is switched off. The shortage becomes a survival
+# emergency, the one relief contract buys two days, and the scenario then ends in
+# recorded civilian collapse rather than in a silent population reduction.
+
+note Idle the water supply on Homeworld and let the shortage build.
+set_facility_idle facility=@homeworld:waterworks_water flag=true
+set_facility_idle facility=@homeworld:hub_water flag=true
+until day=10
+
+note The survival emergency is open. Spend the single relief contract.
+request_relief planet=homeworld
+until day=40

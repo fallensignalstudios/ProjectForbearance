@@ -191,13 +191,24 @@ int command_run(const Options& o) {
         if (!quiet) std::cout << "expect: " << step.text << "\n";
         break;
       case cli::ScriptStep::Kind::Command: {
-        CommandResult r = recorder.apply(step.command);
+        Command command = step.command;
+        if (!step.facility_ref.empty()) {
+          command.facility_id = cli::resolve_reference(*session, step.facility_ref, step.line_number);
+        }
+        if (!step.to_facility_ref.empty()) {
+          command.to_facility_id = cli::resolve_reference(*session, step.to_facility_ref, step.line_number);
+        }
+        if (!step.event_ref.empty()) {
+          command.event_instance_id = cli::resolve_reference(*session, step.event_ref, step.line_number);
+        }
+        CommandResult r = recorder.apply(command);
         if (!r.accepted) {
           ++rejected;
-          std::cout << "  rejected (line " << step.line_number << ", " << command_kind_id(step.command.kind)
+          std::cout << "  rejected (line " << step.line_number << ", " << command_kind_id(command.kind)
                     << "): " << r.reason << (r.detail.empty() ? "" : " -- " + r.detail) << "\n";
         } else if (!quiet && !r.detail.empty()) {
-          std::cout << "  " << command_kind_id(step.command.kind) << ": " << r.detail << "\n";
+          std::cout << "  day " << session->state().day << " " << command_kind_id(command.kind) << ": " << r.detail
+                    << "\n";
         }
         break;
       }
