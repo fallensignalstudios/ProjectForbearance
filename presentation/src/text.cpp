@@ -44,6 +44,69 @@ const std::map<std::string, std::string>& strings() {
       {"news.scenario_compromised", "The evaluation closed: Compromised."},
       {"news.scenario_failed", "The scenario ended in civilian collapse after {days} days."},
       {"news.surrendered", "The administration surrendered on day {day}."},
+
+      // Names for every authored display_key. A host resolves a definition's
+      // display_key through lookup(); display_name() on the raw id is only the
+      // fallback for content that declares no key (TDD 15.5).
+      {"resource.food", "Food"},
+      {"resource.water", "Water"},
+      {"resource.iron_ore", "Iron Ore"},
+      {"resource.coal", "Coal"},
+      {"resource.steel", "Steel"},
+      {"resource.machinery", "Machinery"},
+      {"resource.fuel", "Fuel"},
+
+      {"planet.homeworld", "Homeworld"},
+      {"planet.frontier", "Frontier"},
+
+      {"facility.colony_hub", "Colony Hub"},
+      {"facility.habitat_block", "Habitat Block"},
+      {"facility.agricultural_complex", "Agricultural Complex"},
+      {"facility.waterworks", "Waterworks"},
+      {"facility.extraction_site", "Extraction Site"},
+      {"facility.thermal_generator", "Thermal Generator"},
+      {"facility.steel_foundry", "Steel Foundry"},
+      {"facility.machinery_fabricator", "Machinery Fabricator"},
+      {"facility.fuel_refinery", "Fuel Refinery"},
+      {"facility.public_clinic", "Public Clinic"},
+      {"facility.spaceport", "Spaceport"},
+
+      {"recipe.hub_water", "Hub water reclamation"},
+      {"recipe.habitat_housing", "Housing"},
+      {"recipe.agriculture_food", "Food growing"},
+      {"recipe.waterworks_water", "Water treatment"},
+      {"recipe.extraction_iron", "Iron"},
+      {"recipe.extraction_coal", "Coal"},
+      {"recipe.thermal_power", "Thermal generation"},
+      {"recipe.foundry_steel", "Steel smelting"},
+      {"recipe.fabricator_machinery", "Machinery assembly"},
+      {"recipe.refinery_fuel", "Fuel refining"},
+      {"recipe.clinic_service", "Clinical care"},
+      {"recipe.spaceport_handling", "Cargo handling"},
+
+      {"faction.dominion", "The Dominion"},
+      {"faction.reformation", "The Reformation"},
+      {"faction.neutral_calibration", "Neutral calibration profile"},
+
+      {"policy.normal", "Normal"},
+      {"policy.rationing", "Rationing"},
+      {"policy.emergency_mobilization", "Emergency Mobilization"},
+
+      {"scenario.first_dependency", "The First Dependency"},
+
+      {"event.safety_warning", "Safety warning"},
+      {"event.mining_accident", "Mining accident"},
+      {"event.worker_demands", "Worker safety demands"},
+      {"event.faction_review", "Faction review"},
+
+      {"choice.mining_accident.repair_immediately", "Repair immediately"},
+      {"choice.mining_accident.investigate_and_repair", "Investigate, then repair"},
+      {"choice.mining_accident.replace_crews", "Replace the crews"},
+      {"choice.mining_accident.defer_action", "Defer action"},
+      {"choice.worker_demands.settlement", "Accept the settlement"},
+      {"choice.worker_demands.refusal", "Refuse the demands"},
+      {"choice.faction_review.accept_oversight", "Accept oversight"},
+      {"choice.faction_review.reject_oversight", "Reject oversight"},
   };
   return kStrings;
 }
@@ -166,16 +229,29 @@ std::string format(const std::string& key, const std::vector<NamedValue>& args,
   return out;
 }
 
-std::string news_line(const NewsRecord& n) {
-  std::string body = format(n.template_key, n.args, n.text_args);
-  // Substitute the planet name separately so it is never treated as a number.
+std::string name_of(const std::string& display_key, const std::string& content_id) {
+  if (!display_key.empty()) {
+    const std::string& found = lookup(display_key);
+    // lookup() returns the key itself when it is missing, which is the signal
+    // that content declared a name nobody has written yet.
+    if (found != display_key) return found;
+  }
+  return display_name(content_id);
+}
+
+std::string with_planet(std::string body, const std::string& planet_id) {
   const std::string token = "{planet}";
-  const std::string name = n.planet_id.empty() ? std::string("The sector") : display_name(n.planet_id);
+  const std::string name = planet_id.empty() ? std::string("The sector") : display_name(planet_id);
   std::size_t pos = body.find(token);
   while (pos != std::string::npos) {
     body.replace(pos, token.size(), name);
-    pos = body.find(token);
+    pos = body.find(token, pos + name.size());
   }
+  return body;
+}
+
+std::string news_line(const NewsRecord& n) {
+  const std::string body = with_planet(format(n.template_key, n.args, n.text_args), n.planet_id);
   std::ostringstream ss;
   ss << "day " << n.day << "  " << body;
   return ss.str();

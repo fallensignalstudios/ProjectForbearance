@@ -64,6 +64,7 @@ target_link_libraries(expansion_persistence PUBLIC expansion_core)
 
 add_library(expansion_presentation STATIC
   presentation/src/read_models.cpp
+  presentation/src/view_models.cpp
   presentation/src/text.cpp
 )
 target_include_directories(expansion_presentation PUBLIC presentation/include)
@@ -95,6 +96,7 @@ if(EXPANSION_BUILD_TESTS)
     tests/integration/test_coal_shortage.cpp
     tests/integration/test_host_api.cpp
     tests/integration/test_host_services.cpp
+    tests/integration/test_view_models.cpp
   )
   target_include_directories(expansion_tests PRIVATE tests)
   target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation

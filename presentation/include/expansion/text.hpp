@@ -27,6 +27,15 @@ std::string format(const std::string& key, const std::vector<NamedValue>& args,
 // this is display only (TDD 4.1).
 std::string display_name(const std::string& content_id);
 
+// The name to show for a definition: its authored display_key when the strings
+// table has one, otherwise words derived from the id. A host calls this rather
+// than choosing between the two itself.
+std::string name_of(const std::string& display_key, const std::string& content_id);
+
+// Substitutes {planet} in an already-formatted line. Kept separate from format()
+// so a planet id is never rendered as a number.
+std::string with_planet(std::string body, const std::string& planet_id);
+
 std::string news_line(const NewsRecord& n);
 std::string fact_line(const FactRecord& f);
 // Plain-language rendering of a typed reason id.
