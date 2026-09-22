@@ -9,5 +9,9 @@
   "condition": {
     "maintained_gain_per_day": 0,
     "unmaintained_loss_per_day": 0
+  },
+  "news": {
+    "max_entries": 5,
+    "max_metric_samples": 3
   }
 }

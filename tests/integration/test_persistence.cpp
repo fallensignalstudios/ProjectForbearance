@@ -1,5 +1,6 @@
 // T22-T24, T26, T27: replay determinism, save safety, forecast purity, lifecycle
 // and a bounded soak.
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 
@@ -232,6 +233,13 @@ TEST(t26_finished_scenario_is_idle, "T26: a finished scenario does not accumulat
 
 TEST(t27_soak, "T27: randomised valid commands over many days preserve every invariant") {
   const Catalog& catalog = testing::shipped_catalog();
+  // Section 18.2 asks for 10,000 randomised valid-command days. That belongs in a
+  // nightly job, so the default here is short and EXPANSION_SOAK_DAYS raises it.
+  int soak_days = 400;
+  if (const char* env = std::getenv("EXPANSION_SOAK_DAYS")) {
+    const int requested = std::atoi(env);
+    if (requested > 0) soak_days = requested;
+  }
   auto session = testing::new_session(catalog, "first_dependency", "dominion");
   // A fixed linear congruential sequence keeps the soak reproducible. This is
   // test-side randomness only: the simulation itself uses no generator.
@@ -243,7 +251,7 @@ TEST(t27_soak, "T27: randomised valid commands over many days preserve every inv
   int accepted = 0;
   int rejected = 0;
   int duplicate_ids = 0;
-  for (int day = 0; day < 400; ++day) {
+  for (int day = 0; day < soak_days; ++day) {
     for (int k = 0; k < 3; ++k) {
       Command c;
       const int choice = next(7);
@@ -313,4 +321,54 @@ TEST(t27_soak, "T27: randomised valid commands over many days preserve every inv
   const std::string bytes = encode_save(session->state(), catalog, "soak");
   auto reloaded = Session::from_state(catalog, decode_save(bytes, catalog));
   CHECK_EQ(reloaded->canonical_hash(), session->canonical_hash());
+}
+
+TEST(hash_matches_across_a_reload, "the day hash is identical after a save and reload") {
+  const Catalog& catalog = testing::shipped_catalog();
+  auto warm = testing::new_session(catalog, "first_dependency", "dominion");
+  for (int i = 0; i < 40; ++i) warm->step_day();
+  const std::string a = warm->canonical_hash();
+  CHECK_EQ(warm->canonical_hash(), a);
+  auto cold = Session::from_state(catalog, decode_save(encode_save(warm->state(), catalog, "t"), catalog));
+  CHECK_EQ(cold->canonical_hash(), a);
+}
+
+TEST(archive_digests_survive_pruning, "a pruned archive entry still shapes the canonical hash") {
+  // The fixture caps the news archive at five entries and the metric history at
+  // three samples per world, so both prune within a few days.
+  const Catalog& catalog = *testing::fixture_catalog("bottleneck");
+  CHECK(catalog.news_rules().max_entries <= 5);
+  auto session = testing::new_session(catalog, "half_water_half_power", "testing_profile");
+  std::string previous;
+  for (int day = 0; day < 30; ++day) {
+    session->step_day();
+    // A save taken here and reloaded carries the digests, so the hash is stable
+    // across the round trip even after entries have been pruned away.
+    auto reloaded = Session::from_state(catalog, decode_save(encode_save(session->state(), catalog, "t"), catalog));
+    CHECK_MSG(reloaded->canonical_hash() == session->canonical_hash(),
+              "hash diverged across a reload on day " + to_decimal_string(session->state().day));
+    CHECK_MSG(session->canonical_hash() != previous, "the day hash must change as the day advances");
+    previous = session->canonical_hash();
+  }
+  // Pruning happened, and the digests still carry the entries that left.
+  CHECK(static_cast<int>(session->state().news.size()) <= catalog.news_rules().max_entries);
+  CHECK(!session->state().archive_digests.news.empty());
+  CHECK(!session->state().archive_digests.samples.empty());
+}
+
+TEST(day_hash_cost_is_not_quadratic, "hashing a committed day does not scale with the whole campaign") {
+  const Catalog& catalog = testing::shipped_catalog();
+  auto session = testing::new_session(catalog, "first_dependency", "dominion");
+  auto hash_bytes_at = [&](int days) {
+    while (session->state().day < days) session->step_day();
+    // The live payload is what a day hash re-serialises; the archives are folded
+    // incrementally. Growth in this figure is what a quadratic hash would show.
+    return json::serialize_canonical(encode_live_state(session->state(), catalog)).size();
+  };
+  const std::size_t early = hash_bytes_at(20);
+  const std::size_t late = hash_bytes_at(100);
+  // The live payload grows with facilities and open work, not with history. Five
+  // times the elapsed days must not mean five times the work.
+  CHECK_MSG(late < early * 2, "live payload grew from " + std::to_string(early) + " to " + std::to_string(late) +
+                                  " bytes between day 20 and day 100");
 }

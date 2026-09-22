@@ -132,7 +132,6 @@ struct FacilityState {
   int priority_band = 30;
   bool idle = false;                   // intentionally idle but still maintained
   Day activates_day = 0;               // usable from this day onward
-  int low_condition_streak = 0;        // consecutive operating days below the warning threshold
   Day last_service_completed_day = -1;
   std::optional<ConstructionJob> construction;
   std::optional<ServiceJob> service;
@@ -162,7 +161,9 @@ enum class ShipPhase { Docked, Booked, Transit, ArrivedHolding, Unloading };
 const char* ship_phase_id(ShipPhase p);
 std::optional<ShipPhase> parse_ship_phase(const std::string& s);
 
-enum class ShipMission { None, ColonyRoute, StrategicOutbound, StrategicReturn };
+// A colony leg leaves the mission as None: it is the normal route, not a
+// diversion. Only a strategic voyage marks the freighter as committed.
+enum class ShipMission { None, StrategicOutbound, StrategicReturn };
 const char* ship_mission_id(ShipMission m);
 std::optional<ShipMission> parse_ship_mission(const std::string& s);
 
@@ -180,9 +181,8 @@ struct ShipState {
   Milli tank = 0;
   int crew = 0;
   std::string crew_home_planet;
-  // Booked but not yet loaded manifest, and the claims backing it.
-  ResourceMap booked_manifest;
-  std::vector<InstanceId> booking_reservations;
+  // Destination capacity claims backing the cargo in flight. Cargo and claims are
+  // committed together at departure, so there is no separate booked manifest.
   std::vector<InstanceId> booking_claims;
   // Per-shipment unload progress, so a partial unload cannot be replayed
   // (TDD 10.3).
@@ -190,7 +190,6 @@ struct ShipState {
   InstanceId shipment_id = 0;
   // Strategic mission bookkeeping.
   Day mission_delivery_day = -1;
-  Day mission_return_departure_day = -1;
   bool mission_delivered = false;
 };
 
@@ -238,7 +237,6 @@ struct PoliticalState {
   int adherence = 70;                     // 0..100, sector-level
   std::set<std::string> resolved_choices; // "<event instance>:<choice id>"
   int low_adherence_streak = 0;
-  Day faction_review_cooldown_until = -1;
   std::vector<ActiveModifier> modifiers;  // sector-level modifiers (e.g. oversight)
 };
 
@@ -484,12 +482,38 @@ struct HistoryState {
   std::vector<std::string> day_hashes;    // canonical day hash, most recent last
   Day first_retained_hash_day = 0;
   int missed_colonial_food_manifests = 0;
-  std::set<std::string> milestone_flags;
 };
 
 // ---------------------------------------------------------------------------
 // Session
 // ---------------------------------------------------------------------------
+
+// Rolling digests over every archive entry ever recorded, extended when an entry
+// is appended and never recomputed. They are part of the state, so pruning a
+// bounded archive cannot weaken them: two runs agree only if they recorded the
+// same entries in the same order, whether or not those entries still survive.
+// This is what keeps a committed day's hash proportional to the live state rather
+// than to the whole campaign (docs/decisions/0008-incremental-day-hash.md).
+struct ArchiveDigests {
+  std::string ledger;
+  std::string facts;
+  std::string news;
+  std::string samples;
+  std::string weekly;
+  std::string day_hashes;
+};
+
+// Extends `digest` with one encoded entry: digest = sha256(digest || entry).
+void extend_digest(std::string& digest, const std::string& entry);
+
+// Compact deterministic encodings used only to extend a digest. They are
+// catalog-free on purpose: a digest must be extendable from any append site, and
+// P1 already requires an exact catalog match to load a save at all.
+std::string digest_entry(const Transaction& t);
+std::string digest_entry(const FactRecord& f);
+std::string digest_entry(const NewsRecord& n);
+std::string digest_entry(const MetricSample& s);
+std::string digest_entry(const WeeklySummary& w);
 
 enum class SessionLifecycle { Running, Complete, Compromised, Failed, Surrendered };
 const char* session_lifecycle_id(SessionLifecycle l);
@@ -535,6 +559,7 @@ struct SessionState {
   std::map<std::string, int> condition_streaks;     // "<event id>@<key>" -> consecutive qualifying days
   std::map<std::string, RecordedCommandResult> applied_commands;
 
+  ArchiveDigests archive_digests;
   std::vector<Transaction> ledger;          // bounded, most recent last
   std::vector<FactRecord> facts;
   std::vector<NewsRecord> news;

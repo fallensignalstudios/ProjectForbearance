@@ -38,6 +38,7 @@ void record(SessionState& state, int resource, Milli quantity, const std::string
   t.to_account = to_account;
   t.operation_id = operation_id;
   t.cause = cause;
+  extend_digest(state.archive_digests.ledger, digest_entry(t));
   state.ledger.push_back(t);
   if (state.ledger.size() > kLedgerCap) {
     state.ledger.erase(state.ledger.begin(), state.ledger.begin() + static_cast<long>(state.ledger.size() - kLedgerCap));
@@ -319,6 +320,7 @@ InstanceId emit_fact(SessionState& state, const std::string& kind, const std::st
   f.reason_id = reason_id;
   f.causal_parents = std::move(parents);
   f.dedupe_key = dedupe_key;
+  extend_digest(state.archive_digests.facts, digest_entry(f));
   state.facts.push_back(f);
   return f.id;
 }
@@ -341,23 +343,24 @@ InstanceId emit_news(SessionState& state, const Catalog& cat, const std::string&
   n.source_facts = std::move(source_facts);
   n.dedupe_key = dedupe_key;
   n.priority = priority;
+  extend_digest(state.archive_digests.news, digest_entry(n));
   state.news.push_back(n);
 
-  // Bounded archive: prune the lowest-priority routine entries first, and mark
-  // that detail was compacted rather than leaving a dangling causal link.
+  // Bounded archive. Routine entries go first, then major choices; a mandatory
+  // scenario milestone is never pruned. Survivors are marked compacted so a causal
+  // link points at a summary rather than dangling (TDD 17.2).
   const int cap = cat.news_rules().max_entries;
   if (cap > 0 && static_cast<int>(state.news.size()) > cap) {
-    int worst_priority = -1;
-    std::size_t worst_index = 0;
-    for (std::size_t i = 0; i < state.news.size(); ++i) {
-      if (state.news[i].priority > worst_priority) {
-        worst_priority = state.news[i].priority;
-        worst_index = i;
+    for (int tier = 2; tier >= 1; --tier) {
+      auto oldest = state.news.end();
+      for (auto it = state.news.begin(); it != state.news.end(); ++it) {
+        if (it->priority != tier) continue;
+        if (oldest == state.news.end() || it->day < oldest->day) oldest = it;
       }
-    }
-    if (worst_priority >= 2) {
-      state.news.erase(state.news.begin() + static_cast<long>(worst_index));
+      if (oldest == state.news.end()) continue;
+      state.news.erase(oldest);
       for (auto& survivor : state.news) survivor.detail_compacted = true;
+      break;
     }
   }
   return n.id;

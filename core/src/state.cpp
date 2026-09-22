@@ -2,7 +2,115 @@
 
 #include <algorithm>
 
+#include "expansion/sha256.hpp"
+
 namespace expansion {
+
+void extend_digest(std::string& digest, const std::string& entry) { digest = sha256_hex(digest + entry); }
+
+namespace {
+
+constexpr char kSep = '\x1f';
+
+void field(std::string& out, std::int64_t v) {
+  out += to_decimal_string(v);
+  out.push_back(kSep);
+}
+void field(std::string& out, std::uint64_t v) {
+  out += to_decimal_string_u(v);
+  out.push_back(kSep);
+}
+void field(std::string& out, const std::string& v) {
+  out += v;
+  out.push_back(kSep);
+}
+
+}  // namespace
+
+std::string digest_entry(const Transaction& t) {
+  std::string out = "tx";
+  out.push_back(kSep);
+  field(out, t.id);
+  field(out, t.day);
+  field(out, static_cast<std::int64_t>(t.resource));
+  field(out, t.quantity);
+  field(out, t.from_account);
+  field(out, t.to_account);
+  field(out, t.operation_id);
+  field(out, t.cause);
+  return out;
+}
+
+std::string digest_entry(const FactRecord& f) {
+  std::string out = "fact";
+  out.push_back(kSep);
+  field(out, f.id);
+  field(out, f.day);
+  field(out, f.kind);
+  field(out, f.planet_id);
+  field(out, f.entity_id);
+  for (const auto& a : f.args) {
+    field(out, a.key);
+    field(out, a.value);
+  }
+  out.push_back(kSep);
+  for (const auto& t : f.text_args) field(out, t);
+  out.push_back(kSep);
+  for (InstanceId p : f.causal_parents) field(out, p);
+  out.push_back(kSep);
+  field(out, f.reason_id);
+  field(out, f.dedupe_key);
+  return out;
+}
+
+std::string digest_entry(const NewsRecord& n) {
+  std::string out = "news";
+  out.push_back(kSep);
+  field(out, n.id);
+  field(out, n.day);
+  field(out, n.template_key);
+  field(out, n.planet_id);
+  for (const auto& a : n.args) {
+    field(out, a.key);
+    field(out, a.value);
+  }
+  out.push_back(kSep);
+  for (const auto& t : n.text_args) field(out, t);
+  out.push_back(kSep);
+  for (InstanceId p : n.source_facts) field(out, p);
+  out.push_back(kSep);
+  field(out, n.dedupe_key);
+  field(out, static_cast<std::int64_t>(n.priority));
+  return out;
+}
+
+std::string digest_entry(const MetricSample& s) {
+  std::string out = "sample";
+  out.push_back(kSep);
+  field(out, s.day);
+  field(out, s.planet_id);
+  field(out, s.health_bp);
+  field(out, s.stability_bp);
+  field(out, s.fatigue_bp);
+  field(out, s.food_fulfilment_bp);
+  field(out, s.water_fulfilment_bp);
+  field(out, s.power_fulfilment_bp);
+  for (Milli v : s.closing_stock) field(out, v);
+  return out;
+}
+
+std::string digest_entry(const WeeklySummary& w) {
+  std::string out = "weekly";
+  out.push_back(kSep);
+  field(out, w.first_day);
+  field(out, w.last_day);
+  field(out, w.planet_id);
+  field(out, w.min_health_bp);
+  field(out, w.min_stability_bp);
+  field(out, w.min_food_fulfilment_bp);
+  field(out, w.min_water_fulfilment_bp);
+  return out;
+}
 
 void InventoryState::resize(int resource_count, Milli capacity) {
   on_hand.assign(static_cast<std::size_t>(resource_count), 0);
@@ -79,7 +187,6 @@ std::optional<ShipPhase> parse_ship_phase(const std::string& s) {
 const char* ship_mission_id(ShipMission m) {
   switch (m) {
     case ShipMission::None: return "none";
-    case ShipMission::ColonyRoute: return "colony_route";
     case ShipMission::StrategicOutbound: return "strategic_outbound";
     case ShipMission::StrategicReturn: return "strategic_return";
   }
@@ -88,7 +195,6 @@ const char* ship_mission_id(ShipMission m) {
 
 std::optional<ShipMission> parse_ship_mission(const std::string& s) {
   if (s == "none") return ShipMission::None;
-  if (s == "colony_route") return ShipMission::ColonyRoute;
   if (s == "strategic_outbound") return ShipMission::StrategicOutbound;
   if (s == "strategic_return") return ShipMission::StrategicReturn;
   return std::nullopt;

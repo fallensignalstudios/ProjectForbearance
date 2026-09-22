@@ -113,7 +113,10 @@ std::unique_ptr<Session> Session::from_state(const Catalog& catalog, SessionStat
 }
 
 std::string Session::canonical_hash() const {
-  return sha256_hex(json::serialize_canonical(encode_state(state_, *catalog_)));
+  // The live payload carries a rolling digest of every archive entry ever
+  // recorded, so hashing a committed day costs time proportional to the live
+  // state rather than to the whole campaign.
+  return sha256_hex(json::serialize_canonical(encode_live_state(state_, *catalog_)));
 }
 
 ForecastResult Session::forecast(const std::vector<Command>& candidate_commands, int days) const {

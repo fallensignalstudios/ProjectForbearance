@@ -147,8 +147,6 @@ std::string format(const std::string& key, const std::vector<NamedValue>& args,
 }
 
 std::string news_line(const NewsRecord& n) {
-  std::vector<NamedValue> args = n.args;
-  args.push_back({"planet", 0});
   std::string body = format(n.template_key, n.args, n.text_args);
   // Substitute the planet name separately so it is never treated as a number.
   const std::string token = "{planet}";

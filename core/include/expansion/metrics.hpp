@@ -22,7 +22,12 @@ struct MetricContext {
 bool read_metric(const SessionState& state, const Catalog& catalog, const std::string& metric,
                  const std::string& scope, const MetricContext& ctx, std::int64_t* out);
 
-// Every accepted metric name, for catalog validation and diagnostics.
+// Every accepted metric name, for diagnostics. Parameterised families appear as
+// "stock_*" and "available_*".
 const std::vector<std::string>& metric_whitelist();
+
+// True when `metric` is readable in `scope`. Used by catalog validation so a typo
+// fails to load rather than throwing the first time a condition is evaluated.
+bool is_known_metric(const Catalog& catalog, const std::string& metric, const std::string& scope);
 
 }  // namespace expansion

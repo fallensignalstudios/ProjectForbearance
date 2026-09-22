@@ -127,6 +127,7 @@ Each of these is a documented decision in `docs/decisions/`, not a silent change
 | Construction resolves in priority band 40 | The design's band list does not place construction crews | `0004` |
 | Modifier durations count from the next day to resolve | The design states durations in days without fixing the boundary | `0005` |
 | Civilian needs draw from unreserved stock | Keeps the reservation invariant exact | `0006` |
+| The canonical day hash folds the append-only archives incrementally | Hashing the whole state every day made a campaign's work quadratic | `0008` |
 | `condition_resolved`, `on_resolve`, `expire_keeps_open`, `sector_unique`, `applies_to_facility`, per-choice `resolution` and `cancels_scheduled_from`, per-effect `faction` | Authoring the specified chain behaviour as data instead of code | `0002` |
 
 ## 7. What this implementation narrows
@@ -139,8 +140,8 @@ Each of these is a documented decision in `docs/decisions/`, not a silent change
 - The ledger and the news archive are bounded and included in the canonical hash.
   Pruning is deterministic; a pruned routine fact is marked compacted rather than
   left dangling.
-- Performance budgets are unmeasured. No reference machine has been named, so every
-  timing target in the design remains provisional.
+- Performance budgets are unmeasured against a named machine. The figures in
+  `docs/acceptance_matrix.md` describe this container only.
 
 ## 8. Traceability
 

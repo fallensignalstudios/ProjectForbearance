@@ -295,40 +295,56 @@ void Session::phase_commit() {
     s.water_fulfilment_bp = planet.last_day.water_fulfilment_bp;
     s.power_fulfilment_bp = planet.last_day.power_fulfilment_bp;
     s.closing_stock = planet.inventory.on_hand;
+    extend_digest(state_.archive_digests.samples, digest_entry(s));
     state_.history.samples.push_back(s);
   }
-  const int cap = catalog_->news_rules().max_metric_samples * static_cast<int>(state_.planets.size());
-  if (cap > 0 && static_cast<int>(state_.history.samples.size()) > cap) {
-    // Compact the oldest week into a fixed summary before dropping the samples.
-    const std::size_t drop = state_.history.samples.size() - static_cast<std::size_t>(cap);
-    std::map<std::string, WeeklySummary> weekly;
+  const int sample_cap = catalog_->news_rules().max_metric_samples * static_cast<int>(state_.planets.size());
+  if (sample_cap > 0 && static_cast<int>(state_.history.samples.size()) > sample_cap) {
+    const std::size_t drop = state_.history.samples.size() - static_cast<std::size_t>(sample_cap);
     for (std::size_t i = 0; i < drop; ++i) {
       const MetricSample& s = state_.history.samples[i];
-      auto [it, inserted] = weekly.try_emplace(s.planet_id);
-      WeeklySummary& w = it->second;
-      if (inserted) {
+      // Merge into the fixed weekly bucket this day belongs to, so a summary is
+      // extended rather than appended once per compaction.
+      const Day week = div_floor(s.day, 7);
+      WeeklySummary* bucket = nullptr;
+      for (auto& w : state_.history.weekly) {
+        if (w.planet_id == s.planet_id && div_floor(w.first_day, 7) == week) {
+          bucket = &w;
+          break;
+        }
+      }
+      if (bucket == nullptr) {
+        WeeklySummary w;
         w.planet_id = s.planet_id;
         w.first_day = s.day;
+        w.last_day = s.day;
         w.min_health_bp = s.health_bp;
         w.min_stability_bp = s.stability_bp;
         w.min_food_fulfilment_bp = s.food_fulfilment_bp;
         w.min_water_fulfilment_bp = s.water_fulfilment_bp;
+        state_.history.weekly.push_back(w);
+      } else {
+        bucket->last_day = std::max(bucket->last_day, s.day);
+        bucket->min_health_bp = std::min(bucket->min_health_bp, s.health_bp);
+        bucket->min_stability_bp = std::min(bucket->min_stability_bp, s.stability_bp);
+        bucket->min_food_fulfilment_bp = std::min(bucket->min_food_fulfilment_bp, s.food_fulfilment_bp);
+        bucket->min_water_fulfilment_bp = std::min(bucket->min_water_fulfilment_bp, s.water_fulfilment_bp);
       }
-      w.last_day = s.day;
-      w.min_health_bp = std::min(w.min_health_bp, s.health_bp);
-      w.min_stability_bp = std::min(w.min_stability_bp, s.stability_bp);
-      w.min_food_fulfilment_bp = std::min(w.min_food_fulfilment_bp, s.food_fulfilment_bp);
-      w.min_water_fulfilment_bp = std::min(w.min_water_fulfilment_bp, s.water_fulfilment_bp);
-    }
-    for (const auto& [unused, w] : weekly) {
-      (void)unused;
-      state_.history.weekly.push_back(w);
     }
     state_.history.samples.erase(state_.history.samples.begin(),
                                  state_.history.samples.begin() + static_cast<long>(drop));
   }
+  // The weekly archive is bounded too: a decade of weeks per world. A summary is
+  // digested when it leaves, so a dropped week still shapes the canonical hash.
+  const std::size_t weekly_cap = 520 * state_.planets.size();
+  while (state_.history.weekly.size() > weekly_cap) {
+    extend_digest(state_.archive_digests.weekly, digest_entry(state_.history.weekly.front()));
+    state_.history.weekly.erase(state_.history.weekly.begin());
+  }
 
-  state_.history.day_hashes.push_back(canonical_hash());
+  const std::string day_hash = canonical_hash();
+  extend_digest(state_.archive_digests.day_hashes, day_hash);
+  state_.history.day_hashes.push_back(day_hash);
   constexpr std::size_t kHashCap = 400;
   if (state_.history.day_hashes.size() > kHashCap) {
     const std::size_t drop = state_.history.day_hashes.size() - kHashCap;

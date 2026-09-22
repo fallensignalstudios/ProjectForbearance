@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <functional>
 #include <set>
 
+#include "expansion/metrics.hpp"
 #include "expansion/sha256.hpp"
 
 namespace expansion {
@@ -578,7 +580,7 @@ void Catalog::load_factions(const json::Value& root) {
 void Catalog::load_events(const json::Value& root) {
   for (const auto& e : root.require_array("events", "events")) {
     e.reject_unknown_keys({"id", "display_key", "chain_id", "scope", "applies_to_facility", "queue_class",
-                           "triggered_by_system", "condition",
+                           "condition",
                            "consecutive_days", "condition_resolved", "decision_deadline_days", "cooldown_days",
                            "pauses_simulation", "sector_unique", "expire_keeps_open", "choices", "on_open",
                            "on_resolve", "on_expire", "news_template_open", "news_template_resolved",
@@ -599,7 +601,6 @@ void Catalog::load_events(const json::Value& root) {
     auto qc = parse_queue_class(e.string_or("queue_class", "new_warning"));
     if (!qc) throw SimError("catalog: " + ctx + ": unknown queue_class");
     def.queue_class = *qc;
-    def.triggered_by_system = e.bool_or("triggered_by_system", false);
     if (const json::Value* c = e.find("condition")) {
       def.condition = parse_condition(*c, ctx + ".condition");
       def.has_condition = true;
@@ -953,6 +954,20 @@ void Catalog::validate() {
     if (f.one_per_world && f.buildable) {
       throw SimError("catalog: facility '" + f.id + "': a one-per-world founding asset must not be buildable in P1");
     }
+  }
+  // Every metric a condition reads must be readable in the scope it names, so a
+  // typo fails to load rather than throwing when the condition is first evaluated.
+  std::function<void(const ConditionNode&, const std::string&)> check_condition =
+      [&](const ConditionNode& node, const std::string& where) {
+        if (node.kind == ConditionKind::CompareMetric && !is_known_metric(*this, node.metric, node.scope)) {
+          throw SimError("catalog: " + where + ": metric '" + node.metric + "' is not readable in scope '" +
+                         node.scope + "'");
+        }
+        for (const auto& child : node.children) check_condition(child, where);
+      };
+  for (const auto& e : events_) {
+    if (e.has_condition) check_condition(e.condition, "event '" + e.id + "'.condition");
+    if (e.has_condition_resolved) check_condition(e.condition_resolved, "event '" + e.id + "'.condition_resolved");
   }
   for (const auto& e : events_) {
     if (!e.applies_to_facility.empty() && facility_by_id_.count(e.applies_to_facility) == 0) {

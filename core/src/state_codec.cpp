@@ -298,7 +298,76 @@ DailyReport dec_daily(const Value& v, const std::string& ctx) {
 
 }  // namespace
 
-json::Value encode_state(const SessionState& s, const Catalog& cat) {
+json::Value encode_transaction(const Transaction& t, const Catalog& cat) {
+  Value e = Value::object({});
+  e.set("id", json::dec_u(t.id));
+  e.set("day", json::dec(t.day));
+  e.set("resource", Value::string(cat.resource(t.resource).id));
+  e.set("quantity", json::dec(t.quantity));
+  e.set("from_account", Value::string(t.from_account));
+  e.set("to_account", Value::string(t.to_account));
+  e.set("operation_id", json::dec_u(t.operation_id));
+  e.set("cause", Value::string(t.cause));
+  return e;
+}
+
+json::Value encode_fact(const FactRecord& f) {
+  Value e = Value::object({});
+  e.set("id", json::dec_u(f.id));
+  e.set("day", json::dec(f.day));
+  e.set("kind", Value::string(f.kind));
+  e.set("planet_id", Value::string(f.planet_id));
+  e.set("entity_id", json::dec_u(f.entity_id));
+  e.set("args", enc_named_values(f.args));
+  e.set("text_args", enc_strings(f.text_args));
+  e.set("causal_parents", enc_ids(f.causal_parents));
+  e.set("reason_id", Value::string(f.reason_id));
+  e.set("dedupe_key", Value::string(f.dedupe_key));
+  return e;
+}
+
+json::Value encode_news(const NewsRecord& n) {
+  Value e = Value::object({});
+  e.set("id", json::dec_u(n.id));
+  e.set("day", json::dec(n.day));
+  e.set("template_key", Value::string(n.template_key));
+  e.set("planet_id", Value::string(n.planet_id));
+  e.set("args", enc_named_values(n.args));
+  e.set("text_args", enc_strings(n.text_args));
+  e.set("source_facts", enc_ids(n.source_facts));
+  e.set("dedupe_key", Value::string(n.dedupe_key));
+  e.set("priority", Value::integer(n.priority));
+  e.set("detail_compacted", Value::boolean(n.detail_compacted));
+  return e;
+}
+
+json::Value encode_metric_sample(const MetricSample& x) {
+  Value y = Value::object({});
+  y.set("day", json::dec(x.day));
+  y.set("planet_id", Value::string(x.planet_id));
+  y.set("health_bp", json::dec(x.health_bp));
+  y.set("stability_bp", json::dec(x.stability_bp));
+  y.set("fatigue_bp", json::dec(x.fatigue_bp));
+  y.set("food_fulfilment_bp", json::dec(x.food_fulfilment_bp));
+  y.set("water_fulfilment_bp", json::dec(x.water_fulfilment_bp));
+  y.set("power_fulfilment_bp", json::dec(x.power_fulfilment_bp));
+  y.set("closing_stock", enc_milli_vector(x.closing_stock));
+  return y;
+}
+
+json::Value encode_weekly_summary(const WeeklySummary& x) {
+  Value y = Value::object({});
+  y.set("first_day", json::dec(x.first_day));
+  y.set("last_day", json::dec(x.last_day));
+  y.set("planet_id", Value::string(x.planet_id));
+  y.set("min_health_bp", json::dec(x.min_health_bp));
+  y.set("min_stability_bp", json::dec(x.min_stability_bp));
+  y.set("min_food_fulfilment_bp", json::dec(x.min_food_fulfilment_bp));
+  y.set("min_water_fulfilment_bp", json::dec(x.min_water_fulfilment_bp));
+  return y;
+}
+
+json::Value encode_live_state(const SessionState& s, const Catalog& cat) {
   Value root = Value::object({});
   root.set("schema_version", Value::integer(kStateSchemaVersion));
   root.set("simulation_version", Value::string(s.simulation_version));
@@ -395,7 +464,6 @@ json::Value encode_state(const SessionState& s, const Catalog& cat) {
     e.set("priority_band", Value::integer(f.priority_band));
     e.set("idle", Value::boolean(f.idle));
     e.set("activates_day", json::dec(f.activates_day));
-    e.set("low_condition_streak", Value::integer(f.low_condition_streak));
     e.set("last_service_completed_day", json::dec(f.last_service_completed_day));
     if (f.construction.has_value()) {
       Value j = Value::object({});
@@ -451,13 +519,10 @@ json::Value encode_state(const SessionState& s, const Catalog& cat) {
     e.set("tank", json::dec(sh.tank));
     e.set("crew", Value::integer(sh.crew));
     e.set("crew_home_planet", Value::string(sh.crew_home_planet));
-    e.set("booked_manifest", enc_resource_map(sh.booked_manifest, cat));
-    e.set("booking_reservations", enc_ids(sh.booking_reservations));
     e.set("booking_claims", enc_ids(sh.booking_claims));
     e.set("unloaded_so_far", enc_resource_map(sh.unloaded_so_far, cat));
     e.set("shipment_id", json::dec_u(sh.shipment_id));
     e.set("mission_delivery_day", json::dec(sh.mission_delivery_day));
-    e.set("mission_return_departure_day", json::dec(sh.mission_return_departure_day));
     e.set("mission_delivered", Value::boolean(sh.mission_delivered));
     root.set("ship", e);
   }
@@ -507,7 +572,6 @@ json::Value encode_state(const SessionState& s, const Catalog& cat) {
     for (const auto& k : p.resolved_choices) resolved.push_back(Value::string(k));
     e.set("resolved_choices", resolved);
     e.set("low_adherence_streak", Value::integer(p.low_adherence_streak));
-    e.set("faction_review_cooldown_until", json::dec(p.faction_review_cooldown_until));
     e.set("modifiers", enc_modifiers(p.modifiers));
     root.set("political", e);
   }
@@ -590,42 +654,15 @@ json::Value encode_state(const SessionState& s, const Catalog& cat) {
     root.set("demand", e);
   }
   {
+    // Only the counters that can affect a later day live here. The bounded metric
+    // history and the day-hash chain are archives, added by encode_state.
     const HistoryState& h = s.history;
     Value e = Value::object({});
-    Value samples = Value::array({});
-    for (const auto& x : h.samples) {
-      Value y = Value::object({});
-      y.set("day", json::dec(x.day));
-      y.set("planet_id", Value::string(x.planet_id));
-      y.set("health_bp", json::dec(x.health_bp));
-      y.set("stability_bp", json::dec(x.stability_bp));
-      y.set("fatigue_bp", json::dec(x.fatigue_bp));
-      y.set("food_fulfilment_bp", json::dec(x.food_fulfilment_bp));
-      y.set("water_fulfilment_bp", json::dec(x.water_fulfilment_bp));
-      y.set("power_fulfilment_bp", json::dec(x.power_fulfilment_bp));
-      y.set("closing_stock", enc_milli_vector(x.closing_stock));
-      samples.push_back(y);
-    }
-    e.set("samples", samples);
-    Value weekly = Value::array({});
-    for (const auto& x : h.weekly) {
-      Value y = Value::object({});
-      y.set("first_day", json::dec(x.first_day));
-      y.set("last_day", json::dec(x.last_day));
-      y.set("planet_id", Value::string(x.planet_id));
-      y.set("min_health_bp", json::dec(x.min_health_bp));
-      y.set("min_stability_bp", json::dec(x.min_stability_bp));
-      y.set("min_food_fulfilment_bp", json::dec(x.min_food_fulfilment_bp));
-      y.set("min_water_fulfilment_bp", json::dec(x.min_water_fulfilment_bp));
-      weekly.push_back(y);
-    }
-    e.set("weekly", weekly);
-    e.set("day_hashes", enc_strings(h.day_hashes));
     e.set("first_retained_hash_day", json::dec(h.first_retained_hash_day));
     e.set("missed_colonial_food_manifests", Value::integer(h.missed_colonial_food_manifests));
-    Value flags = Value::array({});
-    for (const auto& f : h.milestone_flags) flags.push_back(Value::string(f));
-    e.set("milestone_flags", flags);
+    e.set("sample_count", Value::integer(static_cast<std::int64_t>(h.samples.size())));
+    e.set("weekly_count", Value::integer(static_cast<std::int64_t>(h.weekly.size())));
+    e.set("day_hash_count", Value::integer(static_cast<std::int64_t>(h.day_hashes.size())));
     root.set("history", e);
   }
 
@@ -647,54 +684,46 @@ json::Value encode_state(const SessionState& s, const Catalog& cat) {
   }
   root.set("applied_commands", applied);
 
-  Value ledger = Value::array({});
-  for (const auto& t : s.ledger) {
+  {
     Value e = Value::object({});
-    e.set("id", json::dec_u(t.id));
-    e.set("day", json::dec(t.day));
-    e.set("resource", Value::string(cat.resource(t.resource).id));
-    e.set("quantity", json::dec(t.quantity));
-    e.set("from_account", Value::string(t.from_account));
-    e.set("to_account", Value::string(t.to_account));
-    e.set("operation_id", json::dec_u(t.operation_id));
-    e.set("cause", Value::string(t.cause));
-    ledger.push_back(e);
+    e.set("ledger", Value::string(s.archive_digests.ledger));
+    e.set("facts", Value::string(s.archive_digests.facts));
+    e.set("news", Value::string(s.archive_digests.news));
+    e.set("samples", Value::string(s.archive_digests.samples));
+    e.set("weekly", Value::string(s.archive_digests.weekly));
+    e.set("day_hashes", Value::string(s.archive_digests.day_hashes));
+    root.set("archive_digests", e);
   }
+  root.set("ledger_count", Value::integer(static_cast<std::int64_t>(s.ledger.size())));
+  root.set("fact_count", Value::integer(static_cast<std::int64_t>(s.facts.size())));
+  root.set("news_count", Value::integer(static_cast<std::int64_t>(s.news.size())));
+  return root;
+}
+
+json::Value encode_state(const SessionState& s, const Catalog& cat) {
+  Value root = encode_live_state(s, cat);
+
+  Value ledger = Value::array({});
+  for (const auto& t : s.ledger) ledger.push_back(encode_transaction(t, cat));
   root.set("ledger", ledger);
 
   Value facts = Value::array({});
-  for (const auto& f : s.facts) {
-    Value e = Value::object({});
-    e.set("id", json::dec_u(f.id));
-    e.set("day", json::dec(f.day));
-    e.set("kind", Value::string(f.kind));
-    e.set("planet_id", Value::string(f.planet_id));
-    e.set("entity_id", json::dec_u(f.entity_id));
-    e.set("args", enc_named_values(f.args));
-    e.set("text_args", enc_strings(f.text_args));
-    e.set("causal_parents", enc_ids(f.causal_parents));
-    e.set("reason_id", Value::string(f.reason_id));
-    e.set("dedupe_key", Value::string(f.dedupe_key));
-    facts.push_back(e);
-  }
+  for (const auto& f : s.facts) facts.push_back(encode_fact(f));
   root.set("facts", facts);
 
   Value news = Value::array({});
-  for (const auto& n : s.news) {
-    Value e = Value::object({});
-    e.set("id", json::dec_u(n.id));
-    e.set("day", json::dec(n.day));
-    e.set("template_key", Value::string(n.template_key));
-    e.set("planet_id", Value::string(n.planet_id));
-    e.set("args", enc_named_values(n.args));
-    e.set("text_args", enc_strings(n.text_args));
-    e.set("source_facts", enc_ids(n.source_facts));
-    e.set("dedupe_key", Value::string(n.dedupe_key));
-    e.set("priority", Value::integer(n.priority));
-    e.set("detail_compacted", Value::boolean(n.detail_compacted));
-    news.push_back(e);
-  }
+  for (const auto& n : s.news) news.push_back(encode_news(n));
   root.set("news", news);
+
+  Value history = root.require("history", "state");
+  Value samples = Value::array({});
+  for (const auto& x : s.history.samples) samples.push_back(encode_metric_sample(x));
+  history.set("samples", samples);
+  Value weekly = Value::array({});
+  for (const auto& x : s.history.weekly) weekly.push_back(encode_weekly_summary(x));
+  history.set("weekly", weekly);
+  history.set("day_hashes", enc_strings(s.history.day_hashes));
+  root.set("history", history);
 
   return root;
 }
@@ -808,7 +837,6 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     f.priority_band = static_cast<int>(e.require_int("priority_band", ctx));
     f.idle = e.bool_or("idle", false);
     f.activates_day = e.require_decimal("activates_day", ctx);
-    f.low_condition_streak = static_cast<int>(e.require_int("low_condition_streak", ctx));
     f.last_service_completed_day = e.require_decimal("last_service_completed_day", ctx);
     if (const json::Value* j = e.find("construction")) {
       ConstructionJob job;
@@ -867,13 +895,10 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     sh.tank = e.require_decimal("tank", ctx);
     sh.crew = static_cast<int>(e.require_int("crew", ctx));
     sh.crew_home_planet = e.require_string("crew_home_planet", ctx);
-    sh.booked_manifest = dec_resource_map(e.require("booked_manifest", ctx), cat, ctx);
-    sh.booking_reservations = dec_ids(e.require("booking_reservations", ctx), ctx);
     sh.booking_claims = dec_ids(e.require("booking_claims", ctx), ctx);
     sh.unloaded_so_far = dec_resource_map(e.require("unloaded_so_far", ctx), cat, ctx);
     sh.shipment_id = e.require_decimal_u("shipment_id", ctx);
     sh.mission_delivery_day = e.require_decimal("mission_delivery_day", ctx);
-    sh.mission_return_departure_day = e.require_decimal("mission_return_departure_day", ctx);
     sh.mission_delivered = e.bool_or("mission_delivered", false);
   }
   {
@@ -918,7 +943,6 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     p.adherence = static_cast<int>(e.require_int("adherence", ctx));
     for (const auto& v : dec_strings(e.require("resolved_choices", ctx), ctx)) p.resolved_choices.insert(v);
     p.low_adherence_streak = static_cast<int>(e.require_int("low_adherence_streak", ctx));
-    p.faction_review_cooldown_until = e.require_decimal("faction_review_cooldown_until", ctx);
     p.modifiers = dec_modifiers(e.require("modifiers", ctx), ctx);
   }
 
@@ -1022,9 +1046,17 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     h.day_hashes = dec_strings(e.require("day_hashes", ctx), ctx);
     h.first_retained_hash_day = e.require_decimal("first_retained_hash_day", ctx);
     h.missed_colonial_food_manifests = static_cast<int>(e.require_int("missed_colonial_food_manifests", ctx));
-    for (const auto& v : dec_strings(e.require("milestone_flags", ctx), ctx)) h.milestone_flags.insert(v);
   }
 
+  {
+    const json::Value& e = root.require("archive_digests", ctx);
+    s.archive_digests.ledger = e.require_string("ledger", ctx);
+    s.archive_digests.facts = e.require_string("facts", ctx);
+    s.archive_digests.news = e.require_string("news", ctx);
+    s.archive_digests.samples = e.require_string("samples", ctx);
+    s.archive_digests.weekly = e.require_string("weekly", ctx);
+    s.archive_digests.day_hashes = e.require_string("day_hashes", ctx);
+  }
   for (const auto& [key, val] : root.require_object("flags", ctx)) s.flags[key] = val.as_bool();
   for (const auto& [key, val] : root.require_object("flag_days", ctx)) {
     s.flag_days[key] = parse_decimal_string(val.as_string());
@@ -1082,6 +1114,32 @@ SessionState decode_state(const json::Value& root, const Catalog& cat) {
     n.priority = static_cast<int>(e.require_int("priority", ctx));
     n.detail_compacted = e.bool_or("detail_compacted", false);
     s.news.push_back(n);
+  }
+  // A truncated archive is a corrupt candidate, not a shorter history.
+  struct CountCheck {
+    const char* key;
+    std::size_t actual;
+  };
+  const CountCheck counts[] = {{"ledger_count", s.ledger.size()},
+                               {"fact_count", s.facts.size()},
+                               {"news_count", s.news.size()}};
+  for (const auto& c : counts) {
+    const std::int64_t declared = root.require_int(c.key, ctx);
+    if (declared != static_cast<std::int64_t>(c.actual)) {
+      throw SimError("save: " + std::string(c.key) + " declares " + std::to_string(declared) + " entries but " +
+                     std::to_string(c.actual) + " were present");
+    }
+  }
+  const json::Value& history_obj = root.require("history", ctx);
+  const CountCheck history_counts[] = {{"sample_count", s.history.samples.size()},
+                                       {"weekly_count", s.history.weekly.size()},
+                                       {"day_hash_count", s.history.day_hashes.size()}};
+  for (const auto& c : history_counts) {
+    const std::int64_t declared = history_obj.require_int(c.key, ctx);
+    if (declared != static_cast<std::int64_t>(c.actual)) {
+      throw SimError("save: history " + std::string(c.key) + " declares " + std::to_string(declared) +
+                     " entries but " + std::to_string(c.actual) + " were present");
+    }
   }
   // Validate the candidate in isolation before any caller can adopt it.
   validate_state(s, cat);

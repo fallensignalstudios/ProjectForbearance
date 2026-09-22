@@ -244,7 +244,6 @@ struct EventDef {
   // For facility-scope events, restricts the trigger to one facility type.
   std::string applies_to_facility;
   EventQueueClass queue_class = EventQueueClass::NewWarning;
-  bool triggered_by_system = false;    // opened by a named system, not by polling
   ConditionNode condition;
   bool has_condition = false;
   int consecutive_days = 0;            // condition must hold this many days

@@ -34,6 +34,36 @@ bool resource_suffix_metric(const Catalog& cat, const std::string& metric, const
 
 const std::vector<std::string>& metric_whitelist() { return kWhitelist; }
 
+bool is_known_metric(const Catalog& cat, const std::string& metric, const std::string& scope) {
+  static const std::vector<std::string> kSector = {
+      "day", "adherence", "missed_colonial_food_manifests", "mandate_issued", "mandate_resolved",
+      "mandate_days_remaining", "colony_launched", "colony_founded"};
+  static const std::vector<std::string> kFacility = {"condition_bp", "assigned_workers", "actual_throughput_bp",
+                                                     "desired_throughput_bp", "operating"};
+  static const std::vector<std::string> kPlanet = {
+      "population", "workers_total", "workers_reserve", "health_bp", "stability_bp", "fatigue_bp",
+      "food_fulfilment_bp", "water_fulfilment_bp", "power_fulfilment_bp", "housing_fulfilment_bp",
+      "clinic_coverage_bp", "survival_emergency_days", "colonised", "housing_capacity", "clinic_capacity",
+      "free_slots"};
+  const std::vector<std::string>* set = nullptr;
+  if (scope == "sector") {
+    set = &kSector;
+  } else if (scope == "facility") {
+    set = &kFacility;
+  } else if (scope == "planet") {
+    set = &kPlanet;
+  } else {
+    return false;
+  }
+  for (const auto& name : *set) {
+    if (name == metric) return true;
+  }
+  if (scope != "planet") return false;
+  int resource = -1;
+  return resource_suffix_metric(cat, metric, "stock_", &resource) ||
+         resource_suffix_metric(cat, metric, "available_", &resource);
+}
+
 bool read_metric(const SessionState& state, const Catalog& cat, const std::string& metric, const std::string& scope,
                  const MetricContext& ctx, std::int64_t* out) {
   if (scope == "sector") {
