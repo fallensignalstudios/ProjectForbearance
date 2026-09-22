@@ -1,0 +1,12 @@
+{
+  "schema": "resources",
+  "resources": [
+    {"id": "food",      "display_key": "resource.food",      "volume_per_unit": 1000},
+    {"id": "water",     "display_key": "resource.water",     "volume_per_unit": 1000},
+    {"id": "iron_ore",  "display_key": "resource.iron_ore",  "volume_per_unit": 1000},
+    {"id": "coal",      "display_key": "resource.coal",      "volume_per_unit": 1000},
+    {"id": "steel",     "display_key": "resource.steel",     "volume_per_unit": 1000},
+    {"id": "machinery", "display_key": "resource.machinery", "volume_per_unit": 1000},
+    {"id": "fuel",      "display_key": "resource.fuel",      "volume_per_unit": 1000}
+  ]
+}

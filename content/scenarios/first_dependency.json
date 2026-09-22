@@ -1,0 +1,119 @@
+{
+  "schema": "scenarios",
+  "scenarios": [
+    {
+      "id": "first_dependency",
+      "display_key": "scenario.first_dependency",
+      "start_day": 0,
+      "planets": [
+        {
+          "planet_id": "homeworld",
+          "colonised": true,
+          "population": 1000,
+          "workers": 500,
+          "health_bp": 10000,
+          "fatigue_bp": 0,
+          "stability_bp": 7000,
+          "stocks": {
+            "food": 800000,
+            "water": 1000000,
+            "iron_ore": 300000,
+            "coal": 240000,
+            "steel": 180000,
+            "machinery": 80000,
+            "fuel": 160000
+          },
+          "facilities": [
+            {"facility_id": "agricultural_complex"},
+            {"facility_id": "waterworks"},
+            {"facility_id": "thermal_generator"},
+            {"facility_id": "extraction_site", "recipe_id": "extraction_iron"},
+            {"facility_id": "extraction_site", "recipe_id": "extraction_coal"},
+            {"facility_id": "steel_foundry"},
+            {"facility_id": "machinery_fabricator"},
+            {"facility_id": "fuel_refinery"},
+            {"facility_id": "public_clinic"},
+            {"facility_id": "habitat_block"},
+            {"facility_id": "habitat_block"},
+            {"facility_id": "spaceport"},
+            {"facility_id": "colony_hub"}
+          ]
+        },
+        {
+          "planet_id": "frontier",
+          "colonised": false,
+          "population": 0,
+          "workers": 0,
+          "health_bp": 10000,
+          "fatigue_bp": 0,
+          "stability_bp": 7000,
+          "stocks": {},
+          "facilities": []
+        }
+      ],
+      "expedition": {
+        "target_planet": "frontier",
+        "residents": 100,
+        "workers": 50,
+        "launch_cost": {"steel": 80000, "machinery": 20000, "food": 80000, "water": 100000, "fuel": 12000},
+        "cargo": {"steel": 40000, "machinery": 10000, "food": 80000, "water": 100000},
+        "transit_per_day": {"food": 10000, "water": 15000},
+        "transit_days": 2,
+        "hub_facility_id": "colony_hub",
+        "launch_deadline_day": 60
+      },
+      "freight": {
+        "origin_planet": "homeworld",
+        "destination_planet": "frontier",
+        "cargo_capacity": 120000,
+        "fuel_tank_capacity": 4000,
+        "crew": 10,
+        "leg_days": 2,
+        "min_dwell_days": 1,
+        "round_trip_fuel": 4000,
+        "outbound_fuel_burn": 2000,
+        "return_fuel_burn": 2000,
+        "round_trip_machinery": 100,
+        "default_food_reserve_days": 3,
+        "default_coal_reserve_days": 3
+      },
+      "mandate": {
+        "id": "first_dependency_mandate",
+        "issue_day": 75,
+        "deadline_day": 100,
+        "requirement": {"fuel": 180000, "steel": 40000},
+        "negotiated_requirement": {"fuel": 90000, "steel": 20000},
+        "negotiate_before_day": 85,
+        "negotiate_adherence": {"dominion": -5, "reformation": 2},
+        "honour_adherence": 5,
+        "fail_adherence": -10,
+        "mission_outbound_days": 5,
+        "mission_service_days": 1,
+        "mission_return_days": 4,
+        "mission_fuel": 8000,
+        "mission_machinery": 100,
+        "last_departure_day": 95
+      },
+      "relief": {
+        "grant": {"food": 100000, "water": 150000},
+        "delivery_delay_days": 2,
+        "adherence_cost": -10,
+        "flag": "relief_used"
+      },
+      "completion": {
+        "evaluation_day": 120,
+        "colony_launch_by_day": 60,
+        "colony_founded_min_days_before_end": 20,
+        "min_health_bp": 6000,
+        "min_stability_bp": 4000,
+        "final_clean_days": 10
+      },
+      "survival": {
+        "emergency_fulfilment_bp": 2500,
+        "emergency_days": 5,
+        "failure_days": 10
+      },
+      "events": ["safety_warning", "mining_accident", "worker_demands", "faction_review"]
+    }
+  ]
+}

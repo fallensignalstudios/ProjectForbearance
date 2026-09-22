@@ -1,0 +1,64 @@
+{
+  "schema": "factions",
+  "factions": [
+    {
+      "id": "neutral_calibration",
+      "display_key": "faction.neutral_calibration",
+      "industry_throughput_bp": 10000,
+      "clinic_capacity_bp": 10000,
+      "initial_adherence": 70,
+      "fixture_only": true
+    },
+    {
+      "id": "dominion",
+      "display_key": "faction.dominion",
+      "industry_throughput_bp": 11000,
+      "clinic_capacity_bp": 10000,
+      "initial_adherence": 70
+    },
+    {
+      "id": "reformation",
+      "display_key": "faction.reformation",
+      "industry_throughput_bp": 10000,
+      "clinic_capacity_bp": 11000,
+      "initial_adherence": 70
+    }
+  ],
+  "policies": [
+    {
+      "id": "normal",
+      "display_key": "policy.normal",
+      "is_default": true,
+      "food_demand_bp": 10000,
+      "mining_throughput_bp": 10000,
+      "industry_throughput_bp": 10000,
+      "stability_target_adjust_bp": 0,
+      "fatigue_delta_per_day": -100,
+      "min_days": 0,
+      "cooldown_days": 0
+    },
+    {
+      "id": "rationing",
+      "display_key": "policy.rationing",
+      "food_demand_bp": 8500,
+      "mining_throughput_bp": 10000,
+      "industry_throughput_bp": 10000,
+      "stability_target_adjust_bp": -500,
+      "fatigue_delta_per_day": -100,
+      "min_days": 7,
+      "cooldown_days": 7
+    },
+    {
+      "id": "emergency_mobilization",
+      "display_key": "policy.emergency_mobilization",
+      "food_demand_bp": 10000,
+      "mining_throughput_bp": 11500,
+      "industry_throughput_bp": 11500,
+      "stability_target_adjust_bp": -500,
+      "fatigue_delta_per_day": 250,
+      "min_days": 7,
+      "cooldown_days": 7,
+      "adherence_on_entry": {"dominion": 2, "reformation": -3}
+    }
+  ]
+}
