@@ -29,8 +29,9 @@ cmake --build build/dev
 ./build/dev/expansion_tests
 ```
 
-The suite runs 73 tests, including the acceptance matrix of Section 18.2 and four
-recorded runs replayed as golden fixtures. A single test can be selected with
+The suite runs 80 tests, including the acceptance matrix of Section 18.2, the
+deliberately broken Coal-supply fixture, and four recorded runs replayed as golden
+fixtures. A single test can be selected with
 `--filter=t05`. GCC and Clang builds produce identical canonical hashes for every
 recorded run, and continuous integration builds both with warnings as errors.
 
