@@ -1,7 +1,6 @@
 #include "expansion/catalog.hpp"
 
 #include <algorithm>
-#include <filesystem>
 #include <functional>
 #include <set>
 
@@ -1060,28 +1059,27 @@ void Catalog::validate() {
   }
 }
 
-Catalog Catalog::load_from_directory(const std::string& content_dir) {
-  namespace fs = std::filesystem;
-  if (!fs::exists(content_dir)) throw SimError("catalog: content directory not found: " + content_dir);
-
-  // Collect every .json file, sorted bytewise by path relative to content_dir,
-  // so the catalog hash does not depend on directory iteration order.
-  std::vector<std::pair<std::string, std::string>> files;  // relative path -> text
-  for (const auto& entry : fs::recursive_directory_iterator(content_dir)) {
-    if (!entry.is_regular_file()) continue;
-    if (entry.path().extension() != ".json") continue;
-    std::string rel = fs::relative(entry.path(), content_dir).generic_string();
-    if (rel.rfind("schemas/", 0) == 0) continue;  // schema documentation, not definitions
-    files.emplace_back(rel, json::read_file(entry.path().string()));
+Catalog Catalog::load(const ContentSource& source) {
+  // Collect every definition file, sorted bytewise by its path, so the catalog
+  // hash does not depend on how a host enumerated them.
+  std::vector<ContentFile> files;
+  for (auto& f : source.read_all()) {
+    // Schema documentation is not a definition.
+    if (f.path.rfind("schemas/", 0) == 0) continue;
+    if (f.path.size() < 5 || f.path.compare(f.path.size() - 5, 5, ".json") != 0) continue;
+    files.push_back(std::move(f));
   }
-  std::sort(files.begin(), files.end(), [](const auto& a, const auto& b) {
-    return json::BytewiseLess{}(a.first, b.first);
+  std::sort(files.begin(), files.end(), [](const ContentFile& a, const ContentFile& b) {
+    return json::BytewiseLess{}(a.path, b.path);
   });
-  if (files.empty()) throw SimError("catalog: no definition files found under " + content_dir);
+  if (files.empty()) throw SimError("catalog: no definition files found in " + source.describe());
+  for (std::size_t i = 1; i < files.size(); ++i) {
+    if (files[i].path == files[i - 1].path) {
+      throw SimError("catalog: '" + files[i].path + "' was supplied twice by " + source.describe());
+    }
+  }
 
   Catalog cat;
-  // Two passes: resources and rules first, because every other file resolves
-  // resource ids and rule defaults.
   struct Loaded {
     std::string rel;
     std::string schema;
@@ -1090,11 +1088,11 @@ Catalog Catalog::load_from_directory(const std::string& content_dir) {
   };
   std::vector<Loaded> loaded;
   loaded.reserve(files.size());
-  for (const auto& [rel, text] : files) {
-    json::Value root = json::parse(text);
-    if (!root.is_object()) throw SimError("catalog: " + rel + ": top level must be an object");
-    std::string schema = root.require_string("schema", rel);
-    loaded.push_back({rel, schema, root, json::serialize_canonical(root)});
+  for (const auto& f : files) {
+    json::Value root = json::parse(f.bytes);
+    if (!root.is_object()) throw SimError("catalog: " + f.path + ": top level must be an object");
+    std::string schema = root.require_string("schema", f.path);
+    loaded.push_back({f.path, schema, root, json::serialize_canonical(root)});
   }
 
   std::string hash_input;

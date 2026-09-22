@@ -27,6 +27,7 @@ else()
 endif()
 
 add_library(expansion_core STATIC
+  core/src/api.cpp
   core/src/units.cpp
   core/src/json.cpp
   core/src/sha256.cpp
@@ -44,6 +45,14 @@ add_library(expansion_core STATIC
   core/src/session.cpp
 )
 target_include_directories(expansion_core PUBLIC core/include)
+
+# Host-side file services. A packaged engine build leaves this out and serves
+# content and saves through its own platform layer.
+add_library(expansion_hostfs STATIC
+  hostfs/src/host_files.cpp
+)
+target_include_directories(expansion_hostfs PUBLIC hostfs/include)
+target_link_libraries(expansion_hostfs PUBLIC expansion_core)
 
 add_library(expansion_persistence STATIC
   persistence/src/save_file.cpp
@@ -63,7 +72,8 @@ add_executable(expansion_cli
   cli/main.cpp
   cli/commands.cpp
 )
-target_link_libraries(expansion_cli PRIVATE expansion_core expansion_persistence expansion_presentation)
+target_link_libraries(expansion_cli PRIVATE expansion_core expansion_persistence expansion_presentation
+                                            expansion_hostfs)
 set_target_properties(expansion_cli PROPERTIES OUTPUT_NAME expansion)
 
 if(EXPANSION_BUILD_TESTS)
@@ -82,9 +92,11 @@ if(EXPANSION_BUILD_TESTS)
     tests/integration/test_derived.cpp
     tests/integration/test_golden.cpp
     tests/integration/test_coal_shortage.cpp
+    tests/integration/test_host_api.cpp
   )
   target_include_directories(expansion_tests PRIVATE tests)
-  target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation)
+  target_link_libraries(expansion_tests PRIVATE expansion_core expansion_persistence expansion_presentation
+                                                expansion_hostfs)
   target_compile_definitions(expansion_tests PRIVATE
     EXPANSION_CONTENT_DIR="${CMAKE_CURRENT_SOURCE_DIR}/content"
     EXPANSION_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"

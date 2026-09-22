@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "expansion/content_source.hpp"
 #include "expansion/json.hpp"
 #include "expansion/units.hpp"
 
@@ -435,9 +436,10 @@ struct NewsRules {
 
 class Catalog {
  public:
-  // Loads and validates every definition file under `content_dir`. Throws
+  // Loads and validates every definition file the source offers. Throws
   // SimError with a specific message on any structural or semantic violation.
-  static Catalog load_from_directory(const std::string& content_dir);
+  // The core never opens a file itself: see content_source.hpp.
+  static Catalog load(const ContentSource& source);
 
   int resource_count() const { return static_cast<int>(resources_.size()); }
   const ResourceDef& resource(int index) const;

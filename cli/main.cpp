@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "commands.hpp"
+#include "expansion/host_files.hpp"
 #include "expansion/derived.hpp"
 #include "expansion/read_models.hpp"
 #include "expansion/replay.hpp"
@@ -90,7 +91,7 @@ void print_usage() {
 
 Catalog load_catalog(const Options& o) {
   const std::string dir = o.get("content", "content");
-  return Catalog::load_from_directory(dir);
+  return host::load_catalog_from_directory(dir);
 }
 
 // The neutral one-day calibration from TDD 9.3, run through the real resolver.
@@ -159,7 +160,7 @@ int command_run(const Options& o) {
   JournalRecorder recorder(*session, catalog);
 
   std::vector<cli::ScriptStep> script;
-  if (o.has("script")) script = cli::parse_script(json::read_file(o.get("script")), catalog);
+  if (o.has("script")) script = cli::parse_script(host::read_file(o.get("script")), catalog);
 
   const Day target_day = static_cast<Day>(o.number("days", 0));
   std::size_t next = 0;
@@ -232,11 +233,11 @@ int command_run(const Options& o) {
   std::cout << "state hash " << session->canonical_hash() << "\n";
 
   if (o.has("save")) {
-    write_save_slot(o.get("save"), encode_save(session->state(), catalog, kBuildId));
+    host::write_save_slot(o.get("save"), encode_save(session->state(), catalog, kBuildId));
     std::cout << "saved to " << o.get("save") << "\n";
   }
   if (o.has("journal")) {
-    json::write_file_atomic(o.get("journal"), encode_journal(recorder.journal()));
+    host::write_file_atomic(o.get("journal"), encode_journal(recorder.journal()));
     std::cout << "journal written to " << o.get("journal") << "\n";
   }
   return 0;
@@ -244,7 +245,7 @@ int command_run(const Options& o) {
 
 std::unique_ptr<Session> load_session(const Options& o, const Catalog& catalog) {
   SaveHeader header;
-  SessionState state = decode_save(json::read_file(o.get("save")), catalog, &header);
+  SessionState state = decode_save(host::read_file(o.get("save")), catalog, &header);
   return Session::from_state(catalog, std::move(state));
 }
 
@@ -304,7 +305,7 @@ int command_forecast(const Options& o) {
 
 int command_replay(const Options& o) {
   Catalog catalog = load_catalog(o);
-  CommandJournal journal = decode_journal(json::read_file(o.get("journal")));
+  CommandJournal journal = decode_journal(host::read_file(o.get("journal")));
   ReplayResult r = replay_journal(catalog, journal);
   std::cout << "replayed " << r.commands_applied << " accepted commands over " << r.day_hashes.size() << " days\n";
   if (r.difference.differs) {
@@ -318,7 +319,7 @@ int command_replay(const Options& o) {
 
 int command_verify(const Options& o) {
   Catalog catalog = load_catalog(o);
-  CommandJournal journal = decode_journal(json::read_file(o.get("journal")));
+  CommandJournal journal = decode_journal(host::read_file(o.get("journal")));
   ReplayResult a = replay_journal(catalog, journal);
   ReplayResult b = replay_journal(catalog, journal);
   if (a.final_hash != b.final_hash) {
@@ -462,7 +463,7 @@ int command_export(const Options& o) {
   root.set("unmet_predicates", predicates);
 
   const std::string out = o.get("out", "expansion_export.json");
-  json::write_file_atomic(out, json::serialize_pretty(root) + "\n");
+  host::write_file_atomic(out, json::serialize_pretty(root) + "\n");
   std::cout << "exported " << s.history.samples.size() << " daily samples, " << s.news.size()
             << " news entries and " << voyages.as_array().size() << " freight events to " << out << "\n";
   return 0;

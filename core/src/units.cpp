@@ -5,35 +5,63 @@
 namespace expansion {
 
 void throw_overflow(const char* op) {
-  throw SimError(std::string("integer overflow in checked ") + op);
+  throw SimError(ErrorCode::Overflow, std::string("integer overflow in checked ") + op);
+}
+
+const char* error_code_id(ErrorCode code) {
+  switch (code) {
+    case ErrorCode::Ok: return "ok";
+    case ErrorCode::InvalidContent: return "invalid_content";
+    case ErrorCode::InvalidArgument: return "invalid_argument";
+    case ErrorCode::NotFound: return "not_found";
+    case ErrorCode::IncompatibleSave: return "incompatible_save";
+    case ErrorCode::CorruptSave: return "corrupt_save";
+    case ErrorCode::Overflow: return "overflow";
+    case ErrorCode::InvariantViolated: return "invariant_violated";
+    case ErrorCode::Internal: return "internal";
+  }
+  return "internal";
 }
 
 namespace {
-__extension__ typedef __int128 Wide;
 
-std::int64_t narrow(Wide v, const char* op) {
-  if (v > static_cast<Wide>(std::numeric_limits<std::int64_t>::max()) ||
-      v < static_cast<Wide>(std::numeric_limits<std::int64_t>::min())) {
-    throw_overflow(op);
+// floor or ceil of (a * b) / c, exact through a 128-bit intermediate, with no
+// dependence on a compiler-specific wide type (see wide_math.hpp).
+std::int64_t mul_div(std::int64_t a, std::int64_t b, std::int64_t c, bool round_up, const char* op) {
+  if (c <= 0) throw SimError(std::string(op) + ": non-positive divisor");
+  if (a == 0 || b == 0) return 0;
+
+  const bool negative = (a < 0) != (b < 0);
+  const wide::U128 product = wide::mul_u64(wide::magnitude(a), wide::magnitude(b));
+  std::uint64_t quotient = 0;
+  std::uint64_t remainder = 0;
+  if (!wide::divmod_u128(product, wide::magnitude(c), &quotient, &remainder)) throw_overflow(op);
+
+  // Round away from zero on the magnitude when the signed result rounds up.
+  const bool bump = remainder != 0 && (negative ? !round_up : round_up);
+  if (bump) {
+    if (quotient == std::numeric_limits<std::uint64_t>::max()) throw_overflow(op);
+    quotient += 1;
   }
-  return static_cast<std::int64_t>(v);
+
+  constexpr std::uint64_t kMaxPositive = static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max());
+  if (negative) {
+    if (quotient > kMaxPositive + 1ULL) throw_overflow(op);
+    if (quotient == kMaxPositive + 1ULL) return std::numeric_limits<std::int64_t>::min();
+    return -static_cast<std::int64_t>(quotient);
+  }
+  if (quotient > kMaxPositive) throw_overflow(op);
+  return static_cast<std::int64_t>(quotient);
 }
+
 }  // namespace
 
 std::int64_t mul_div_floor(std::int64_t a, std::int64_t b, std::int64_t c) {
-  if (c <= 0) throw SimError("mul_div_floor: non-positive divisor");
-  Wide num = static_cast<Wide>(a) * static_cast<Wide>(b);
-  Wide q = num / c;
-  if ((num % c) != 0 && num < 0) --q;  // floor toward negative infinity
-  return narrow(q, "mul_div_floor");
+  return mul_div(a, b, c, false, "mul_div_floor");
 }
 
 std::int64_t mul_div_ceil(std::int64_t a, std::int64_t b, std::int64_t c) {
-  if (c <= 0) throw SimError("mul_div_ceil: non-positive divisor");
-  Wide num = static_cast<Wide>(a) * static_cast<Wide>(b);
-  Wide q = num / c;
-  if ((num % c) != 0 && num > 0) ++q;  // ceil toward positive infinity
-  return narrow(q, "mul_div_ceil");
+  return mul_div(a, b, c, true, "mul_div_ceil");
 }
 
 std::int64_t div_floor(std::int64_t n, std::int64_t d) { return mul_div_floor(n, 1, d); }

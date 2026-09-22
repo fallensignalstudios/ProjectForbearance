@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <string>
 
+#include "expansion/wide_math.hpp"
+
 namespace expansion {
 
 // A quantity of a stored commodity, in milli-units. 1 displayed unit == 1000 internal units.
@@ -27,12 +29,33 @@ using Revision = std::uint64_t;
 using InstanceId = std::uint64_t;
 using People = std::int64_t;
 
-// Raised for any arithmetic or invariant violation inside the authoritative core.
-// The public session API catches these and converts them to typed errors; the core
-// never throws through a host adapter (TDD 19.2).
+// What went wrong, in terms a host can branch on without reading the message.
+enum class ErrorCode {
+  Ok,
+  InvalidContent,     // a definition file failed to load or validate
+  InvalidArgument,    // a parameter to a public operation was not usable
+  NotFound,           // a named scenario, faction or instance does not exist
+  IncompatibleSave,   // the save was written by another simulation or catalog
+  CorruptSave,        // the payload is truncated, mistyped or fails its checksum
+  Overflow,           // checked arithmetic could not represent a result
+  InvariantViolated,  // the state would have left a bound the design fixes
+  Internal,           // anything the core did not classify
+};
+const char* error_code_id(ErrorCode code);
+
+// Raised for any arithmetic or invariant violation inside the authoritative
+// core. Internal only: every public operation in api.hpp catches these and
+// returns typed error information instead, because the core must not throw
+// through a host adapter (TDD 19.2). Unreal disables exceptions in many module
+// configurations, so this boundary matters in practice, not just on paper.
 class SimError : public std::runtime_error {
  public:
-  explicit SimError(const std::string& what) : std::runtime_error(what) {}
+  explicit SimError(const std::string& what) : std::runtime_error(what), code_(ErrorCode::Internal) {}
+  SimError(ErrorCode code, const std::string& what) : std::runtime_error(what), code_(code) {}
+  ErrorCode code() const { return code_; }
+
+ private:
+  ErrorCode code_;
 };
 
 [[noreturn]] void throw_overflow(const char* op);
@@ -44,19 +67,19 @@ class SimError : public std::runtime_error {
 
 inline std::int64_t checked_add(std::int64_t a, std::int64_t b) {
   std::int64_t out = 0;
-  if (__builtin_add_overflow(a, b, &out)) throw_overflow("add");
+  if (wide::add_overflow(a, b, &out)) throw_overflow("add");
   return out;
 }
 
 inline std::int64_t checked_sub(std::int64_t a, std::int64_t b) {
   std::int64_t out = 0;
-  if (__builtin_sub_overflow(a, b, &out)) throw_overflow("sub");
+  if (wide::sub_overflow(a, b, &out)) throw_overflow("sub");
   return out;
 }
 
 inline std::int64_t checked_mul(std::int64_t a, std::int64_t b) {
   std::int64_t out = 0;
-  if (__builtin_mul_overflow(a, b, &out)) throw_overflow("mul");
+  if (wide::mul_overflow(a, b, &out)) throw_overflow("mul");
   return out;
 }
 

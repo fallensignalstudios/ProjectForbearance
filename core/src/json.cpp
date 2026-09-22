@@ -1,16 +1,6 @@
 #include "expansion/json.hpp"
 
-#include <cstdio>
 #include <cstring>
-#include <fstream>
-#include <sstream>
-
-#if defined(_WIN32)
-#include <io.h>
-#else
-#include <fcntl.h>
-#include <unistd.h>
-#endif
 
 namespace expansion::json {
 
@@ -518,38 +508,5 @@ std::string serialize_pretty(const Value& v, int indent) {
 
 Value dec(std::int64_t v) { return Value::string(to_decimal_string(v)); }
 Value dec_u(std::uint64_t v) { return Value::string(to_decimal_string_u(v)); }
-
-std::string read_file(const std::string& path) {
-  std::ifstream in(path, std::ios::binary);
-  if (!in) throw SimError("cannot open file for reading: " + path);
-  std::ostringstream ss;
-  ss << in.rdbuf();
-  if (in.bad()) throw SimError("read error on file: " + path);
-  return ss.str();
-}
-
-void write_file_atomic(const std::string& path, const std::string& bytes) {
-  // Temporary file in the target directory, flushed, then renamed over the slot
-  // (TDD 16.2). Durability on the real target OS remains an untested claim.
-  const std::string tmp = path + ".tmp";
-  {
-    std::ofstream out(tmp, std::ios::binary | std::ios::trunc);
-    if (!out) throw SimError("cannot open temporary file for writing: " + tmp);
-    out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
-    out.flush();
-    if (!out) throw SimError("write error on temporary file: " + tmp);
-  }
-#if !defined(_WIN32)
-  int fd = ::open(tmp.c_str(), O_RDONLY);
-  if (fd >= 0) {
-    ::fsync(fd);
-    ::close(fd);
-  }
-#endif
-  std::remove(path.c_str());
-  if (std::rename(tmp.c_str(), path.c_str()) != 0) {
-    throw SimError("cannot replace save slot: " + path);
-  }
-}
 
 }  // namespace expansion::json

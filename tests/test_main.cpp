@@ -1,3 +1,4 @@
+#include "expansion/host_files.hpp"
 #include "harness.hpp"
 
 #include <algorithm>
@@ -23,7 +24,7 @@ void fail(const std::string& what, const char* file, int line) {
 }
 
 const expansion::Catalog& shipped_catalog() {
-  static expansion::Catalog catalog = expansion::Catalog::load_from_directory(EXPANSION_CONTENT_DIR);
+  static expansion::Catalog catalog = expansion::host::load_catalog_from_directory(EXPANSION_CONTENT_DIR);
   return catalog;
 }
 
@@ -33,7 +34,7 @@ const expansion::Catalog* fixture_catalog(const char* name) {
   auto it = cache.find(key);
   if (it == cache.end()) {
     auto catalog = std::make_unique<expansion::Catalog>(
-        expansion::Catalog::load_from_directory(std::string(EXPANSION_FIXTURE_DIR) + "/" + key));
+        expansion::host::load_catalog_from_directory(std::string(EXPANSION_FIXTURE_DIR) + "/" + key));
     it = cache.emplace(key, std::move(catalog)).first;
   }
   return it->second.get();

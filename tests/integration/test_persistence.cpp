@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 
+#include "expansion/host_files.hpp"
 #include "expansion/replay.hpp"
 #include "expansion/save_file.hpp"
 #include "expansion/state_codec.hpp"
@@ -137,10 +138,10 @@ TEST(t23_save_round_trip, "T23: a save round-trips exactly and keeps a backup sl
   CHECK_EQ(session->canonical_hash(), reloaded->canonical_hash());
 
   const std::string path = temp_path("slot.scexp.json");
-  write_save_slot(path, bytes);
-  write_save_slot(path, encode_save(session->state(), catalog, "test"));
+  host::write_save_slot(path, bytes);
+  host::write_save_slot(path, encode_save(session->state(), catalog, "test"));
   CHECK(std::filesystem::exists(path + ".bak"));
-  SessionState from_backup = decode_save(json::read_file(path + ".bak"), catalog);
+  SessionState from_backup = decode_save(host::read_file(path + ".bak"), catalog);
   CHECK_EQ(from_backup.day, 12);
 }
 

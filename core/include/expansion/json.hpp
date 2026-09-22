@@ -116,7 +116,4 @@ std::string serialize_pretty(const Value& v, int indent = 0);
 Value dec(std::int64_t v);   // integer as a canonical decimal string
 Value dec_u(std::uint64_t v);
 
-std::string read_file(const std::string& path);
-void write_file_atomic(const std::string& path, const std::string& bytes);
-
 }  // namespace expansion::json

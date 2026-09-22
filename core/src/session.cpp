@@ -99,12 +99,14 @@ std::unique_ptr<Session> Session::create(const Catalog& catalog, const std::stri
 
 std::unique_ptr<Session> Session::from_state(const Catalog& catalog, SessionState state) {
   if (state.catalog_hash != catalog.hash()) {
-    throw SimError("session: the save was written against catalog " + state.catalog_hash + " but this catalog is " +
-                   catalog.hash() + "; P1 requires an exact catalog match");
+    throw SimError(ErrorCode::IncompatibleSave,
+                   "session: the save was written against catalog " + state.catalog_hash + " but this catalog is " +
+                       catalog.hash() + "; P1 requires an exact catalog match");
   }
   if (state.simulation_version != catalog.simulation_version()) {
-    throw SimError("session: the save was written by simulation version " + state.simulation_version +
-                   "; this build is " + catalog.simulation_version());
+    throw SimError(ErrorCode::IncompatibleSave,
+                   "session: the save was written by simulation version " + state.simulation_version +
+                       "; this build is " + catalog.simulation_version());
   }
   std::unique_ptr<Session> session(new Session(catalog));
   session->state_ = std::move(state);

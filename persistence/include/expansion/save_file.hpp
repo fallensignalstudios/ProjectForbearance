@@ -38,11 +38,6 @@ SessionState decode_save(const std::string& bytes, const Catalog& catalog, SaveH
 // Reads only the envelope, for listing slots without loading a campaign.
 SaveHeader read_save_header(const std::string& bytes);
 
-// Writes through a temporary file in the target directory and keeps the previous
-// valid slot as `<path>.bak`. A newer snapshot is never overwritten by a late
-// completion from an older write.
-void write_save_slot(const std::string& path, const std::string& bytes);
-
 // Rolling autosave slots plus one pre-major-decision checkpoint (TDD 16.2).
 struct SaveSlots {
   std::string directory;

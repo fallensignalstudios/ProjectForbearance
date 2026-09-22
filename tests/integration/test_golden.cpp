@@ -1,5 +1,6 @@
 // T29 and the packaged-build gate (TDD 18.2, 18.4): recorded runs that must keep
 // producing the same committed days, including one Complete run per faction.
+#include "expansion/host_files.hpp"
 #include "expansion/read_models.hpp"
 #include "expansion/replay.hpp"
 #include "harness.hpp"
@@ -18,7 +19,7 @@ struct Golden {
 ReplayResult replay_golden(const Catalog& catalog, const Golden& g, SessionLifecycle* outcome,
                            bool* relief_used) {
   const std::string path = std::string(EXPANSION_REPLAY_DIR) + "/" + g.file;
-  CommandJournal journal = decode_journal(json::read_file(path));
+  CommandJournal journal = decode_journal(host::read_file(path));
   CHECK_MSG(journal.catalog_hash == catalog.hash(),
             std::string(g.file) + " was recorded against a different catalog; re-record it deliberately");
   CHECK_MSG(journal.faction_id == std::string(g.faction), std::string(g.file) + " names an unexpected faction");
@@ -75,7 +76,7 @@ TEST(golden_relief_and_loss, "a recorded run reproduces the relief contract and 
 TEST(golden_no_developer_grants, "no recorded run relies on a grant outside the authored content") {
   const Catalog& catalog = testing::shipped_catalog();
   for (const char* file : {"first_dependency_dominion.journal.json", "first_dependency_reformation.journal.json"}) {
-    CommandJournal journal = decode_journal(json::read_file(std::string(EXPANSION_REPLAY_DIR) + "/" + file));
+    CommandJournal journal = decode_journal(host::read_file(std::string(EXPANSION_REPLAY_DIR) + "/" + file));
     auto session = Session::create(catalog, journal.scenario_id, journal.faction_id, journal.seed);
     for (const auto& e : journal.entries) {
       if (e.is_step) {

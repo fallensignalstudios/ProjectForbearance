@@ -1,7 +1,5 @@
 #include "expansion/save_file.hpp"
 
-#include <filesystem>
-
 #include "expansion/json.hpp"
 #include "expansion/sha256.hpp"
 #include "expansion/state_codec.hpp"
@@ -32,7 +30,7 @@ SaveHeader read_save_header(const std::string& bytes) {
   const std::string ctx = "save envelope";
   SaveHeader h;
   h.magic = root.require_string("magic", ctx);
-  if (h.magic != kSaveMagic) throw SimError("save: this file is not a Sovereign Call: Expansion save");
+  if (h.magic != kSaveMagic) throw SimError(ErrorCode::CorruptSave, "save: this file is not a Sovereign Call: Expansion save");
   h.format_version = static_cast<int>(root.require_int("format_version", ctx));
   h.simulation_version = root.require_string("simulation_version", ctx);
   h.catalog_hash = root.require_string("catalog_hash", ctx);
@@ -49,26 +47,29 @@ SessionState decode_save(const std::string& bytes, const Catalog& catalog, SaveH
   json::Value root = json::parse(bytes);
   SaveHeader h = read_save_header(bytes);
   if (h.format_version != kSaveFormatVersion) {
-    throw SimError("save: unsupported save format version " + std::to_string(h.format_version) +
-                   "; this build reads version " + std::to_string(kSaveFormatVersion));
+    throw SimError(ErrorCode::IncompatibleSave,
+                   "save: unsupported save format version " + std::to_string(h.format_version) +
+                       "; this build reads version " + std::to_string(kSaveFormatVersion));
   }
   if (h.simulation_version != catalog.simulation_version()) {
-    throw SimError("save: written by simulation version " + h.simulation_version + "; this build is " +
-                   catalog.simulation_version());
+    throw SimError(ErrorCode::IncompatibleSave, "save: written by simulation version " + h.simulation_version +
+                                                    "; this build is " + catalog.simulation_version());
   }
   // An exact catalog match is required in P1, even when the difference looks
   // cosmetic (TDD 16.3).
   if (h.catalog_hash != catalog.hash()) {
-    throw SimError("save: catalog mismatch. The save expects catalog " + h.catalog_hash + "; this content set is " +
-                   catalog.hash() + ". No state was changed.");
+    throw SimError(ErrorCode::IncompatibleSave,
+                   "save: catalog mismatch. The save expects catalog " + h.catalog_hash +
+                       "; this content set is " + catalog.hash() + ". No state was changed.");
   }
   const json::Value& payload = root.require("payload", "save envelope");
   const std::string canonical = json::serialize_canonical(payload);
   if (canonical.size() != h.payload_length) {
-    throw SimError("save: payload length does not match the envelope");
+    throw SimError(ErrorCode::CorruptSave, "save: payload length does not match the envelope");
   }
   if (sha256_hex(canonical) != h.payload_sha256) {
-    throw SimError("save: payload checksum does not match the envelope; the file has been changed or truncated");
+    throw SimError(ErrorCode::CorruptSave,
+                   "save: payload checksum does not match the envelope; the file has been changed or truncated");
   }
   SessionState state = decode_state(payload, catalog);
   if (state.day != h.day || state.revision != h.revision) {
@@ -76,17 +77,6 @@ SessionState decode_save(const std::string& bytes, const Catalog& catalog, SaveH
   }
   if (header_out != nullptr) *header_out = h;
   return state;
-}
-
-void write_save_slot(const std::string& path, const std::string& bytes) {
-  namespace fs = std::filesystem;
-  // Keep the previous valid slot as a backup before replacing it.
-  if (fs::exists(path)) {
-    std::error_code ec;
-    fs::copy_file(path, path + ".bak", fs::copy_options::overwrite_existing, ec);
-    if (ec) throw SimError("save: cannot write the backup slot: " + ec.message());
-  }
-  json::write_file_atomic(path, bytes);
 }
 
 std::string SaveSlots::autosave_path(int index) const {
