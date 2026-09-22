@@ -66,9 +66,9 @@ jobs:
       - name: Build with both compilers
         run: |
           cmake -S . -B build-gcc -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-          cmake --build build-gcc --target expansion
+          cmake --build build-gcc --target expansion_cli
           CC=clang CXX=clang++ cmake -S . -B build-clang -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo
-          cmake --build build-clang --target expansion
+          cmake --build build-clang --target expansion_cli
 
       - name: Compare canonical hashes for every recorded run
         run: |
